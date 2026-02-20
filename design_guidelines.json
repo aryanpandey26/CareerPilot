@@ -1,0 +1,185 @@
+{
+  "design_system": {
+    "identity": {
+      "name": "Interview AI Coach",
+      "archetype": "The Performance Pro",
+      "tone": "Empathetic, Precise, Authoritative, Encouraging",
+      "mood": "Athletic Professionalism. Think high-end gym for your career."
+    },
+    "typography": {
+      "font_family": {
+        "heading": "Oswald, sans-serif",
+        "body": "Inter, sans-serif",
+        "mono": "JetBrains Mono, monospace"
+      },
+      "imports": [
+        "https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;700&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+      ],
+      "scale": {
+        "h1": "text-5xl md:text-6xl font-bold tracking-tight uppercase",
+        "h2": "text-3xl md:text-4xl font-bold tracking-tight uppercase",
+        "h3": "text-2xl font-semibold tracking-normal",
+        "body_lg": "text-lg leading-relaxed text-slate-700",
+        "body": "text-base leading-relaxed text-slate-600",
+        "caption": "text-sm text-slate-500 uppercase tracking-wider"
+      }
+    },
+    "colors": {
+      "palette": {
+        "primary": {
+          "DEFAULT": "#4F46E5",
+          "foreground": "#FFFFFF",
+          "description": "Electric Indigo - Trust, Tech, Kinetic Energy"
+        },
+        "secondary": {
+          "DEFAULT": "#0F172A",
+          "foreground": "#FFFFFF",
+          "description": "Deep Obsidian - Authority, Structure (Slate 900)"
+        },
+        "accent": {
+          "DEFAULT": "#10B981",
+          "foreground": "#FFFFFF",
+          "description": "Success Green - Growth, High Scores"
+        },
+        "destructive": {
+          "DEFAULT": "#E11D48",
+          "foreground": "#FFFFFF",
+          "description": "Critical Rose - Errors, Missing Skills"
+        },
+        "background": {
+          "light": "#FFFFFF",
+          "dark": "#020617",
+          "subtle": "#F8FAFC"
+        },
+        "surface": {
+          "card": "#FFFFFF",
+          "popover": "#FFFFFF",
+          "glass": "rgba(255, 255, 255, 0.7)"
+        }
+      },
+      "gradients": {
+        "hero": "bg-gradient-to-r from-slate-900 to-slate-800",
+        "brand": "bg-gradient-to-br from-indigo-600 to-violet-600",
+        "glass": "backdrop-blur-xl bg-white/70 border border-white/20 shadow-lg"
+      }
+    },
+    "spacing": {
+      "container": "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8",
+      "section_padding": "py-16 md:py-24",
+      "card_padding": "p-6 md:p-8"
+    },
+    "border_radius": {
+      "base": "0.5rem",
+      "lg": "0.75rem",
+      "full": "9999px"
+    },
+    "shadows": {
+      "card": "0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)",
+      "hover": "0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)",
+      "glow": "0 0 20px rgba(79, 70, 229, 0.3)"
+    }
+  },
+  "components": {
+    "buttons": {
+      "variants": {
+        "default": "bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm font-medium rounded-md px-6 py-3 transition-all active:scale-95",
+        "outline": "border border-slate-200 bg-white hover:bg-slate-50 hover:text-primary text-slate-900 font-medium rounded-md px-6 py-3 transition-all",
+        "ghost": "hover:bg-slate-100 hover:text-slate-900 text-slate-600 font-medium rounded-md px-4 py-2 transition-all",
+        "destructive": "bg-destructive text-destructive-foreground hover:bg-destructive/90 shadow-sm font-medium rounded-md px-6 py-3"
+      }
+    },
+    "cards": {
+      "base": "bg-white rounded-lg border border-slate-200 shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden",
+      "glass": "backdrop-blur-xl bg-white/60 border border-white/40 shadow-lg rounded-xl",
+      "dark": "bg-slate-900 border border-slate-800 text-slate-50 shadow-xl rounded-xl"
+    },
+    "inputs": {
+      "base": "flex h-10 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+    },
+    "visual_enhancers": {
+      "tracing_beam": "Use for 'Start Interview' or 'Upload Resume' cards. Animate a gradient border.",
+      "bento_grid": "Use for Dashboard Analytics. Mix of 1x1, 2x1, and 2x2 cards.",
+      "score_circle": "Use Recharts PieChart or simple SVG for ATS Score. Don't use generic bars."
+    }
+  },
+  "layout_patterns": {
+    "marketing": {
+      "hero": "Left-aligned strong typography (Oswald). Right side: 3D or layered UI mockup (glassmorphism). Background: Subtle grid pattern.",
+      "features": "Bento Grid layout. Alternating text/image blocks. High contrast icons.",
+      "testimonials": "Horizontal scroll (Marquee) or Grid of clean cards with avatars."
+    },
+    "dashboard": {
+      "structure": "Sidebar navigation (fixed). Top header (sticky, glass). Main content area (scrollable).",
+      "grid": "Grid-cols-1 md:grid-cols-12 gap-6. Charts span 4-8 cols. Stats span 2-4 cols.",
+      "widgets": "Card-based widgets. Clean headers. Minimal chart axes."
+    },
+    "interview_room": {
+      "mode": "DARK MODE MANDATORY",
+      "layout": "Central focus: AI Avatar/Waveform. Bottom: Control Bar (Mic, Cam, End). Right/Bottom-Right: Live Transcript (collapsible).",
+      "vibe": "Cinematic, Distraction-free. Focus on the voice."
+    }
+  },
+  "assets": {
+    "icons": {
+      "library": "lucide-react",
+      "style": "Stroke width 1.5px or 2px. Consistency is key.",
+      "recommendation": "Use Lucide for UI. Use Phosphor (if available) for marketing."
+    },
+    "images": {
+      "hero_main": {
+        "url": "https://images.unsplash.com/photo-1765005204058-10418f5123c5?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NTYxODl8MHwxfHNlYXJjaHwxfHxwcm9mZXNzaW9uYWwlMjBqb2IlMjBpbnRlcnZpZXclMjBzdWNjZXNzJTIwY29uZmlkZW50fGVufDB8fHx8MTc3MTU5NzY2NHww&ixlib=rb-4.1.0&q=85",
+        "alt": "Professional confident woman ready for interview"
+      },
+      "testimonials": [
+        {
+          "url": "https://images.unsplash.com/photo-1738750908048-14200459c3c9?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1OTN8MHwxfHNlYXJjaHw0fHxjb25maWRlbnQlMjBwcm9mZXNzaW9uYWwlMjBidXNpbmVzcyUyMHBvcnRyYWl0cyUyMGRpdmVyc2V8ZW58MHx8fHwxNzcxNTk3NjY1fDA&ixlib=rb-4.1.0&q=85",
+          "alt": "Male professional in suit"
+        },
+        {
+          "url": "https://images.unsplash.com/photo-1650784855038-9f4d5ed154a9?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1OTN8MHwxfHNlYXJjaHwxfHxjb25maWRlbnQlMjBwcm9mZXNzaW9uYWwlMjBidXNpbmVzcyUyMHBvcnRyYWl0cyUyMGRpdmVyc2V8ZW58MHx8fHwxNzcxNTk3NjY1fDA&ixlib=rb-4.1.0&q=85",
+          "alt": "Diverse group of professionals"
+        }
+      ]
+    }
+  },
+  "motion": {
+    "library": "framer-motion",
+    "guidelines": {
+      "page_transition": "Opacity fade (0.3s).",
+      "card_entrance": "Staggered fade-up (y: 20 -> 0, opacity: 0 -> 1).",
+      "button_tap": "Scale: 0.95.",
+      "interview_waveform": "Looping bars based on audio amplitude."
+    }
+  },
+  "accessibility": {
+    "contrast": "Ensure text is APCA compliant. Dark text on light backgrounds must be slate-700 or darker.",
+    "focus": "Visible ring-2 ring-primary ring-offset-2 on all interactive elements.",
+    "screen_readers": "Use aria-labels for icon-only buttons. Semantic HTML structure."
+  },
+  "instructions_to_main_agent": [
+    "1. Setup Tailwind Colors: Update tailwind.config.js with the specified palette (Electric Indigo & Deep Obsidian).",
+    "2. Font Setup: Add the Google Fonts import to index.css or index.html immediately.",
+    "3. Component Audit: Customize Shadcn components in /components/ui to match the 'Performance Pro' rounded-md and border styles.",
+    "4. Layout Implementation: Build the Dashboard layout using the Sidebar/Header pattern.",
+    "5. Live Session: Implement the 'Interview Room' with a mandatory dark theme toggle or forced dark mode context.",
+    "6. Charts: Use Recharts for the Analytics dashboard. Style them to match the theme (no default colors).",
+    "7. Testing: Add data-testid to all buttons and inputs as requested."
+  ],
+  "UNIVERSAL_GUIDELINES_FOR_MAIN_AGENT": [
+    "You tend to converge toward generic outputs. Avoid 'AI slop'.",
+    "Dark colors look good when used independently without gradients. DO NOT use dark colors as gradients.",
+    "Don't make generic centered layouts. Use grids.",
+    "Create depth through layered design elements with z-index hierarchy.",
+    "Use glass-morphism effects with backdrop filters (12-24px blur) for floating elements.",
+    "You MUST NOT apply universal transition (transition: all).",
+    "You MUST NOT center align the app container.",
+    "Always use modern button styles.",
+    "NEVER use AI assistant Emoji characters like 🤖 etc.",
+    "Every interaction needs micro-animations.",
+    "Use 2-3x more spacing than feels comfortable.",
+    "Components MUST use named exports.",
+    "Pages MUST use default exports.",
+    "Use sonner for toasts.",
+    "All interactive elements MUST include data-testid attribute."
+  ]
+}
