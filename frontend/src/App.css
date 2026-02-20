@@ -2,6 +2,7 @@
 .App {
   min-height: 100vh;
   position: relative;
+  background: #ffffff;
 }
 
 /* Smooth transitions for interactive elements */
@@ -21,6 +22,7 @@ button:active {
   height: 40px !important;
   padding: 8px 12px !important;
   align-items: center !important;
+  justify-content: center !important;
   gap: 8px !important;
   border-radius: 50px !important;
   background: #000 !important;
@@ -31,6 +33,7 @@ button:active {
   z-index: 99999 !important;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
   overflow: hidden !important;
+  border: none !important;
 }
 
 #emergent-badge:hover {
@@ -40,22 +43,50 @@ button:active {
 
 #emergent-badge p {
   color: #FFF !important;
-  font-family: 'Inter', sans-serif !important;
+  font-family: 'Poppins', 'Inter', sans-serif !important;
   font-size: 13px !important;
   font-weight: 600 !important;
   margin: 0 !important;
+  padding: 0 !important;
   white-space: nowrap !important;
   line-height: 1 !important;
 }
 
 #emergent-badge svg {
   flex-shrink: 0 !important;
+  width: 20px !important;
+  height: 20px !important;
 }
 
 /* Hide any potential white backgrounds near badge */
 #emergent-badge::before,
 #emergent-badge::after {
   display: none !important;
+}
+
+/* Remove any white containers at bottom right */
+body::after,
+#root::after,
+.App::after {
+  display: none !important;
+}
+
+/* Ensure no white space at viewport edges */
+html, body {
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+}
+
+/* Better typography */
+* {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  letter-spacing: -0.02em;
 }
 
 /* Glass morphism utility */
