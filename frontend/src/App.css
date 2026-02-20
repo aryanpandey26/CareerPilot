@@ -1,6 +1,8 @@
 /* Remove generic centered layout */
 .App {
   min-height: 100vh;
+  position: relative;
+  padding-bottom: 60px; /* Space for fixed badge */
 }
 
 /* Smooth transitions for interactive elements */
@@ -10,6 +12,39 @@ button {
 
 button:active {
   transform: scale(0.95);
+}
+
+/* Ensure Emergent badge is always visible and styled correctly */
+#emergent-badge {
+  display: inline-flex !important;
+  box-sizing: border-box;
+  width: 178px !important;
+  height: 40px !important;
+  padding: 8px 12px !important;
+  align-items: center !important;
+  gap: 8px !important;
+  border-radius: 50px !important;
+  background: #000 !important;
+  position: fixed !important;
+  bottom: 16px !important;
+  right: 16px !important;
+  text-decoration: none !important;
+  z-index: 99999 !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+}
+
+#emergent-badge:hover {
+  transform: scale(1.05);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2) !important;
+}
+
+#emergent-badge p {
+  color: #FFF !important;
+  font-family: 'Inter', sans-serif !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  margin: 0 !important;
+  white-space: nowrap !important;
 }
 
 /* Glass morphism utility */
