@@ -162,14 +162,16 @@ Tasks:
 4. Identify missing keywords, matching skills, and partially matching skills
 5. Suggest resume improvements
 
-Return output strictly in JSON format:
+Return output strictly in JSON format with arrays of STRINGS only:
 {{
-  "ats_score": number,
-  "matching_skills": [],
-  "missing_skills": [],
-  "partial_matches": [],
-  "improvement_suggestions": []
+  "ats_score": 75,
+  "matching_skills": ["Python", "JavaScript", "React"],
+  "missing_skills": ["Docker", "Kubernetes"],
+  "partial_matches": ["Frontend Development", "APIs"],
+  "improvement_suggestions": ["Add more quantifiable achievements", "Include specific technologies used"]
 }}
+
+IMPORTANT: All arrays must contain simple strings, not objects. For partial_matches, just list the skill names as strings.
 
 Scoring Logic:
 - Exact skill match = high weight
