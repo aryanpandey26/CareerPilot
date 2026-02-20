@@ -67,6 +67,11 @@ class EvaluationResult(BaseModel):
     model_answer: str
     improvement_suggestions: List[str]
 
+class InterviewSessionRequest(BaseModel):
+    job_title: str
+    experience_level: str
+    questions: QuestionSet
+
 class InterviewSession(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
