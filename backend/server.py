@@ -195,13 +195,14 @@ Scoring Logic:
         logging.error(f"Error in analyze_resume: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@api_router.post("/generate-questions", response_model=QuestionSet)
-async def generate_questions(
-    extracted_skills: List[str],
-    missing_skills: List[str],
-    job_title: str,
+class QuestionGenerationRequest(BaseModel):
+    extracted_skills: List[str]
+    missing_skills: List[str]
+    job_title: str
     experience_level: str
-):
+
+@api_router.post("/generate-questions", response_model=QuestionSet)
+async def generate_questions(request: QuestionGenerationRequest):
     """Generate dynamic interview questions"""
     try:
         prompt = f"""Generate interview questions tailored to:
