@@ -135,12 +135,16 @@ async def call_llm(prompt: str, system_message: str = "You are a professional AI
 async def root():
     return {"message": "AI Interview Engine API"}
 
+class ResumeAnalysisRequest(BaseModel):
+    resume_text: str
+    job_description: str
+
 @api_router.post("/analyze-resume", response_model=ATSAnalysisResult)
 async def analyze_resume(
     resume: UploadFile = File(...),
     job_description: str = Form(...)
 ):
-    """Analyze resume against job description"""
+    """Analyze resume against job description (PDF upload)"""
     try:
         # Extract text from resume
         resume_content = await resume.read()
