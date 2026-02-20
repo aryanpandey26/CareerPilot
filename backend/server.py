@@ -212,6 +212,76 @@ Scoring Logic:
         logging.error(f"Error in analyze_resume: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+@api_router.post("/analyze-resume-text", response_model=ATSAnalysisResult)
+async def analyze_resume_text(request: ResumeAnalysisRequest):
+    """Analyze resume against job description (text-based)"""
+    try:
+        resume_text = request.resume_text
+        job_description = request.job_description
+        
+        # Create prompt for ATS analysis
+        prompt = f"""Analyze the resume against the job description.
+
+Resume Text:
+{resume_text}
+
+Job Description:
+{job_description}
+
+Tasks:
+1. Extract technical skills from resume
+2. Extract required skills from JD
+3. Calculate ATS Match Score (0-100%)
+4. Identify missing keywords, matching skills, and partially matching skills
+5. Suggest resume improvements
+
+Return output strictly in JSON format with arrays of STRINGS only:
+{{
+  "ats_score": 75,
+  "matching_skills": ["Python", "JavaScript", "React"],
+  "missing_skills": ["Docker", "Kubernetes"],
+  "partial_matches": ["Frontend Development", "APIs"],
+  "improvement_suggestions": ["Add more quantifiable achievements", "Include specific technologies used"]
+}}
+
+IMPORTANT: All arrays must contain simple strings, not objects. For partial_matches, just list the skill names as strings.
+
+Scoring Logic:
+- Exact skill match = high weight
+- Related technology = medium weight
+- No match = zero
+- Soft skills count lower than technical skills"""
+        
+        system_message = "You are an expert ATS Resume Analyzer. You must be professional, unbiased, and return structured JSON output only."
+        response = await call_llm(prompt, system_message)
+        
+        # Parse JSON response
+        try:
+            # Remove markdown code blocks if present
+            response_clean = response.strip()
+            if response_clean.startswith("```"):
+                response_clean = response_clean.split("```")[1]
+                if response_clean.startswith("json"):
+                    response_clean = response_clean[4:]
+            response_clean = response_clean.strip()
+            
+            result_data = json.loads(response_clean)
+            analysis = ATSAnalysisResult(**result_data)
+            
+            # Store in database
+            doc = analysis.model_dump()
+            await db.ats_analyses.insert_one(doc)
+            
+            return analysis
+        except json.JSONDecodeError as e:
+            logging.error(f"Failed to parse LLM response: {response}")
+            raise HTTPException(status_code=500, detail="Failed to parse analysis results")
+            
+    except Exception as e:
+        logging.error(f"Error in analyze_resume_text: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 class QuestionGenerationRequest(BaseModel):
     extracted_skills: List[str]
     missing_skills: List[str]
