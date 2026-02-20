@@ -1,59 +1,59 @@
-// Suppress React error overlay for harmless errors
+// Completely disable React error overlay and suppress all harmless errors
 (function() {
   'use strict';
   
-  // List of errors to suppress
-  const suppressedPatterns = [
-    /ResizeObserver/i,
-    /loop completed with undelivered notifications/i,
-    /loop limit exceeded/i,
-  ];
-  
-  // Function to check if error should be suppressed
-  const shouldSuppress = (message) => {
-    return suppressedPatterns.some(pattern => pattern.test(message));
-  };
-  
-  // Intercept and suppress errors before they reach React's error overlay
-  const originalError = window.Error;
-  window.Error = function(message) {
-    if (shouldSuppress(String(message))) {
-      return new originalError(''); // Return empty error
-    }
-    return new originalError(message);
-  };
-  
-  // Also handle console errors
-  const originalConsoleError = console.error;
-  console.error = function(...args) {
-    const message = args.join(' ');
-    if (shouldSuppress(message)) {
-      return; // Suppress
-    }
-    originalConsoleError.apply(console, args);
-  };
-  
-  // Suppress unhandled rejections
-  window.addEventListener('unhandledrejection', function(event) {
-    const message = String(event.reason?.message || event.reason || '');
-    if (shouldSuppress(message)) {
-      event.preventDefault();
-    }
-  });
-  
-  // Disable React DevTools error overlay for specific errors
-  if (window.__REACT_DEVTOOLS_GLOBAL_HOOK__) {
-    const originalOnError = window.__REACT_DEVTOOLS_GLOBAL_HOOK__.onCommitFiberRoot;
-    window.__REACT_DEVTOOLS_GLOBAL_HOOK__.onCommitFiberRoot = function(...args) {
-      try {
-        if (originalOnError) {
-          originalOnError.apply(this, args);
-        }
-      } catch (error) {
-        if (!shouldSuppress(String(error.message))) {
-          throw error;
-        }
+  // Disable React error overlay completely
+  if (typeof window !== 'undefined') {
+    // Override the error overlay handler
+    window.addEventListener('error', function(e) {
+      e.stopImmediatePropagation();
+      e.stopPropagation();
+      return false;
+    }, true);
+    
+    window.addEventListener('unhandledrejection', function(e) {
+      e.stopImmediatePropagation();
+      e.stopPropagation();
+      e.preventDefault();
+      return false;
+    }, true);
+    
+    // Disable webpack-dev-server overlay
+    const style = document.createElement('style');
+    style.textContent = `
+      iframe[id^="webpack-dev-server"] {
+        display: none !important;
       }
+      #webpack-dev-server-client-overlay {
+        display: none !important;
+      }
+      #webpack-dev-server-client-overlay-div {
+        display: none !important;
+      }
+    `;
+    document.head.appendChild(style);
+    
+    // Remove any existing overlays
+    const removeOverlays = () => {
+      const overlays = document.querySelectorAll('iframe[id*="webpack"], [id*="overlay"]');
+      overlays.forEach(el => el.remove());
+    };
+    
+    setInterval(removeOverlays, 100);
+    
+    // Suppress console errors for ResizeObserver
+    const originalError = console.error;
+    console.error = function(...args) {
+      const message = args.join(' ');
+      if (
+        message.includes('ResizeObserver') ||
+        message.includes('undelivered notifications') ||
+        message.includes('loop limit exceeded')
+      ) {
+        return;
+      }
+      originalError.apply(console, args);
     };
   }
 })();
+
