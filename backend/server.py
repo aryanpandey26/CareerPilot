@@ -207,10 +207,10 @@ async def generate_questions(request: QuestionGenerationRequest):
     try:
         prompt = f"""Generate interview questions tailored to:
 
-User's existing skills: {', '.join(extracted_skills)}
-Missing skills from JD: {', '.join(missing_skills)}
-Job Role: {job_title}
-Experience Level: {experience_level}
+User's existing skills: {', '.join(request.extracted_skills)}
+Missing skills from JD: {', '.join(request.missing_skills)}
+Job Role: {request.job_title}
+Experience Level: {request.experience_level}
 
 Generate:
 - 5 Technical Questions
