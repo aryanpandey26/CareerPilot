@@ -347,16 +347,16 @@ async def create_interview_session(request: InterviewSessionRequest):
     try:
         # Format questions
         all_questions = []
-        for q in questions.technical_questions:
+        for q in request.questions.technical_questions:
             all_questions.append({"type": "technical", "text": q})
-        for q in questions.scenario_questions:
+        for q in request.questions.scenario_questions:
             all_questions.append({"type": "scenario", "text": q})
-        for q in questions.hr_questions:
+        for q in request.questions.hr_questions:
             all_questions.append({"type": "hr", "text": q})
         
         session = InterviewSession(
-            job_title=job_title,
-            experience_level=experience_level,
+            job_title=request.job_title,
+            experience_level=request.experience_level,
             questions=all_questions
         )
         
