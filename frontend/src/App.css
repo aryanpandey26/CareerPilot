@@ -2,7 +2,6 @@
 .App {
   min-height: 100vh;
   position: relative;
-  padding-bottom: 60px; /* Space for fixed badge */
 }
 
 /* Smooth transitions for interactive elements */
@@ -31,6 +30,7 @@ button:active {
   text-decoration: none !important;
   z-index: 99999 !important;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+  overflow: hidden !important;
 }
 
 #emergent-badge:hover {
@@ -45,6 +45,17 @@ button:active {
   font-weight: 600 !important;
   margin: 0 !important;
   white-space: nowrap !important;
+  line-height: 1 !important;
+}
+
+#emergent-badge svg {
+  flex-shrink: 0 !important;
+}
+
+/* Hide any potential white backgrounds near badge */
+#emergent-badge::before,
+#emergent-badge::after {
+  display: none !important;
 }
 
 /* Glass morphism utility */
