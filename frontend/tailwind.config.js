@@ -33,7 +33,7 @@ module.exports = {
         ring: '#4F46E5',
       },
       fontFamily: {
-        heading: ['Oswald', 'sans-serif'],
+        heading: ['Poppins', 'sans-serif'],
         body: ['Inter', 'sans-serif'],
         mono: ['JetBrains Mono', 'monospace'],
       },
