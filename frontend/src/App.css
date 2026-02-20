@@ -1,34 +1,63 @@
-.App-logo {
-    height: 40vmin;
-    pointer-events: none;
+/* Remove generic centered layout */
+.App {
+  min-height: 100vh;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-    .App-logo {
-        animation: App-logo-spin infinite 20s linear;
-    }
+/* Smooth transitions for interactive elements */
+button {
+  transition: transform 0.2s, box-shadow 0.2s, background-color 0.2s;
 }
 
-.App-header {
-    background-color: #0f0f10;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    font-size: calc(10px + 2vmin);
-    color: white;
+button:active {
+  transform: scale(0.95);
 }
 
-.App-link {
-    color: #61dafb;
+/* Glass morphism utility */
+.glass {
+  backdrop-filter: blur(16px);
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
-@keyframes App-logo-spin {
-    from {
-        transform: rotate(0deg);
-    }
-    to {
-        transform: rotate(360deg);
-    }
+.dark .glass {
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
+
+/* Gradient text */
+.gradient-text {
+  background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Score circle animation */
+@keyframes fillCircle {
+  from {
+    stroke-dashoffset: 283;
+  }
+}
+
+.score-circle {
+  animation: fillCircle 1.5s ease-out forwards;
+}
+
+/* Waveform animation for interview room */
+@keyframes wave {
+  0%, 100% {
+    transform: scaleY(0.5);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+
+.wave-bar {
+  animation: wave 1s ease-in-out infinite;
+}
+
+.wave-bar:nth-child(2) { animation-delay: 0.1s; }
+.wave-bar:nth-child(3) { animation-delay: 0.2s; }
+.wave-bar:nth-child(4) { animation-delay: 0.3s; }
+.wave-bar:nth-child(5) { animation-delay: 0.4s; }
