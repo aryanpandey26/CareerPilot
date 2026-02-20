@@ -31,30 +31,54 @@ export default function ResumeAnalyzer() {
   };
 
   const handleAnalyze = async () => {
-    if (!resumeFile || !jobDescription.trim()) {
-      toast.error("Please upload resume and enter job description");
-      return;
-    }
+    if (inputMode === "pdf") {
+      if (!resumeFile || !jobDescription.trim()) {
+        toast.error("Please upload resume and enter job description");
+        return;
+      }
 
-    setAnalyzing(true);
-    try {
-      const formData = new FormData();
-      formData.append("resume", resumeFile);
-      formData.append("job_description", jobDescription);
+      setAnalyzing(true);
+      try {
+        const formData = new FormData();
+        formData.append("resume", resumeFile);
+        formData.append("job_description", jobDescription);
 
-      const response = await axios.post(`${API}/analyze-resume`, formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      });
+        const response = await axios.post(`${API}/analyze-resume`, formData, {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        });
 
-      setResult(response.data);
-      toast.success("Analysis complete!");
-    } catch (error) {
-      console.error("Error analyzing resume:", error);
-      toast.error("Failed to analyze resume. Please try again.");
-    } finally {
-      setAnalyzing(false);
+        setResult(response.data);
+        toast.success("Analysis complete!");
+      } catch (error) {
+        console.error("Error analyzing resume:", error);
+        toast.error("Failed to analyze resume. Please try again.");
+      } finally {
+        setAnalyzing(false);
+      }
+    } else {
+      // Text mode
+      if (!resumeText.trim() || !jobDescription.trim()) {
+        toast.error("Please enter both resume text and job description");
+        return;
+      }
+
+      setAnalyzing(true);
+      try {
+        const response = await axios.post(`${API}/analyze-resume-text`, {
+          resume_text: resumeText,
+          job_description: jobDescription,
+        });
+
+        setResult(response.data);
+        toast.success("Analysis complete!");
+      } catch (error) {
+        console.error("Error analyzing resume:", error);
+        toast.error("Failed to analyze resume. Please try again.");
+      } finally {
+        setAnalyzing(false);
+      }
     }
   };
 
