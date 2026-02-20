@@ -8,6 +8,7 @@ import ResultsPage from "@/pages/ResultsPage";
 import Dashboard from "@/pages/Dashboard";
 import { Navigation } from "@/components/Navigation";
 import { Toaster } from "@/components/ui/sonner";
+import ErrorBoundary from "@/components/ErrorBoundary";
 
 function AppContent() {
   const location = useLocation();
@@ -34,12 +35,14 @@ function AppContent() {
 
 function App() {
   return (
-    <div className="App">
-      <BrowserRouter>
-        <AppContent />
-        <Toaster />
-      </BrowserRouter>
-    </div>
+    <ErrorBoundary>
+      <div className="App">
+        <BrowserRouter>
+          <AppContent />
+          <Toaster />
+        </BrowserRouter>
+      </div>
+    </ErrorBoundary>
   );
 }
 
