@@ -342,11 +342,7 @@ Overall Score = Weighted average:
         raise HTTPException(status_code=500, detail=str(e))
 
 @api_router.post("/interview-session", response_model=InterviewSession)
-async def create_interview_session(
-    job_title: str,
-    experience_level: str,
-    questions: QuestionSet
-):
+async def create_interview_session(request: InterviewSessionRequest):
     """Create a new interview session"""
     try:
         # Format questions
