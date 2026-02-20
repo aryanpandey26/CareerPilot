@@ -14,6 +14,8 @@ const API = `${BACKEND_URL}/api`;
 export default function ResumeAnalyzer() {
   const navigate = useNavigate();
   const [resumeFile, setResumeFile] = useState(null);
+  const [resumeText, setResumeText] = useState("");
+  const [inputMode, setInputMode] = useState("text"); // "text" or "pdf"
   const [jobDescription, setJobDescription] = useState("");
   const [analyzing, setAnalyzing] = useState(false);
   const [result, setResult] = useState(null);
