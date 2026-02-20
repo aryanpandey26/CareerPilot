@@ -49,6 +49,12 @@ class QuestionSet(BaseModel):
     scenario_questions: List[str]
     hr_questions: List[str]
 
+class QuestionGenerationRequest(BaseModel):
+    extracted_skills: List[str]
+    missing_skills: List[str]
+    job_title: str
+    experience_level: str
+
 class EvaluationResult(BaseModel):
     model_config = ConfigDict(extra="ignore")
     technical_accuracy: float
