@@ -192,6 +192,36 @@ export default function InterviewRoom() {
             )}
           </Button>
         </div>
+
+        {/* Tips & Alert Section */}
+        <Card className="bg-gradient-to-r from-blue-900/40 to-purple-900/40 backdrop-blur-sm border-blue-400/30 p-6 mt-8">
+          <div className="flex items-start gap-4">
+            <div className="flex-shrink-0">
+              <div className="bg-blue-500/20 rounded-full p-3">
+                <svg className="w-6 h-6 text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+            </div>
+            <div className="flex-1">
+              <h3 className="text-blue-200 font-semibold text-base mb-2">Interview Tips</h3>
+              <ul className="text-blue-100/80 text-sm space-y-1.5">
+                <li className="flex items-start gap-2">
+                  <span className="text-blue-400 mt-0.5">•</span>
+                  <span>Structure your answer with clear examples and specific details</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-blue-400 mt-0.5">•</span>
+                  <span>Take your time to think before responding - quality over speed</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-blue-400 mt-0.5">•</span>
+                  <span>Use the STAR method: Situation, Task, Action, Result</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </Card>
       </div>
     </div>
   );
