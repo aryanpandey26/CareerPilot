@@ -121,36 +121,77 @@ export default function ResumeAnalyzer() {
                 Upload Your Details
               </h2>
 
-              {/* Resume Upload */}
+              {/* Input Mode Toggle */}
+              <div className="mb-6 flex gap-2">
+                <Button
+                  data-testid="text-mode-btn"
+                  onClick={() => setInputMode("text")}
+                  variant={inputMode === "text" ? "default" : "outline"}
+                  className="flex-1"
+                >
+                  Paste Text
+                </Button>
+                <Button
+                  data-testid="pdf-mode-btn"
+                  onClick={() => setInputMode("pdf")}
+                  variant={inputMode === "pdf" ? "default" : "outline"}
+                  className="flex-1"
+                >
+                  Upload PDF
+                </Button>
+              </div>
+
+              {/* Resume Input - Text or PDF */}
               <div className="mb-6">
                 <label className="block text-sm font-medium text-slate-700 mb-2">
-                  Resume (PDF)
+                  {inputMode === "pdf" ? "Resume (PDF)" : "Resume Text"}
                 </label>
-                <div className="border-2 border-dashed border-slate-300 rounded-lg p-8 text-center hover:border-primary transition-colors cursor-pointer">
-                  <input
-                    data-testid="resume-upload-input"
-                    type="file"
-                    accept=".pdf"
-                    onChange={handleFileChange}
-                    className="hidden"
-                    id="resume-upload"
+                {inputMode === "pdf" ? (
+                  <div className="border-2 border-dashed border-slate-300 rounded-lg p-8 text-center hover:border-primary transition-colors cursor-pointer">
+                    <input
+                      data-testid="resume-upload-input"
+                      type="file"
+                      accept=".pdf"
+                      onChange={handleFileChange}
+                      className="hidden"
+                      id="resume-upload"
+                    />
+                    <label htmlFor="resume-upload" className="cursor-pointer">
+                      {resumeFile ? (
+                        <div className="text-primary">
+                          <FileText className="h-12 w-12 mx-auto mb-2" />
+                          <p className="font-medium">{resumeFile.name}</p>
+                          <p className="text-sm text-slate-500">Click to change</p>
+                        </div>
+                      ) : (
+                        <div className="text-slate-500">
+                          <Upload className="h-12 w-12 mx-auto mb-2" />
+                          <p className="font-medium">Click to upload resume</p>
+                          <p className="text-sm">PDF format only</p>
+                        </div>
+                      )}
+                    </label>
+                  </div>
+                ) : (
+                  <Textarea
+                    data-testid="resume-text-input"
+                    placeholder="Paste your resume text here...
+
+Example:
+John Doe
+Full Stack Developer
+
+Skills: Python, JavaScript, React, Node.js, FastAPI, MongoDB
+
+Experience:
+- Senior Developer at Tech Corp (2020-2024)
+- Built scalable web applications"
+                    value={resumeText}
+                    onChange={(e) => setResumeText(e.target.value)}
+                    rows={12}
+                    className="w-full font-mono text-sm"
                   />
-                  <label htmlFor="resume-upload" className="cursor-pointer">
-                    {resumeFile ? (
-                      <div className="text-primary">
-                        <FileText className="h-12 w-12 mx-auto mb-2" />
-                        <p className="font-medium">{resumeFile.name}</p>
-                        <p className="text-sm text-slate-500">Click to change</p>
-                      </div>
-                    ) : (
-                      <div className="text-slate-500">
-                        <Upload className="h-12 w-12 mx-auto mb-2" />
-                        <p className="font-medium">Click to upload resume</p>
-                        <p className="text-sm">PDF format only</p>
-                      </div>
-                    )}
-                  </label>
-                </div>
+                )}
               </div>
 
               {/* Job Description */}
