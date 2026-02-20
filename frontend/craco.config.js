@@ -78,6 +78,12 @@ if (config.enableVisualEdits && babelMetadataPlugin) {
 }
 
 webpackConfig.devServer = (devServerConfig) => {
+  // Disable error overlay completely
+  devServerConfig.client = {
+    overlay: false, // Disable error overlay
+    logging: 'none', // Reduce console noise
+  };
+  
   // Apply visual edits dev server setup only if enabled
   if (config.enableVisualEdits && setupDevServer) {
     devServerConfig = setupDevServer(devServerConfig);
