@@ -92,22 +92,22 @@ export default function InterviewRoom() {
   const progress = ((currentQuestionIndex + 1) / session?.questions.length) * 100;
 
   return (
-    <div className="min-h-screen bg-background-dark dark">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
       {/* Progress Bar */}
-      <div className="bg-slate-800 h-2">
+      <div className="bg-slate-800/50 h-1.5">
         <div
-          className="bg-primary h-full transition-all duration-500"
+          className="bg-gradient-to-r from-purple-500 to-pink-500 h-full transition-all duration-500 shadow-lg shadow-purple-500/50"
           style={{ width: `${progress}%` }}
         />
       </div>
 
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
-        <div className="text-center mb-12">
-          <p className="text-slate-400 text-sm uppercase tracking-wider mb-2">
+        <div className="text-center mb-8">
+          <p className="text-purple-300 text-sm font-medium tracking-wide mb-3">
             Question {currentQuestionIndex + 1} of {session?.questions.length}
           </p>
-          <div className="inline-block px-4 py-1 bg-primary/20 text-primary rounded-full text-sm font-medium">
+          <div className="inline-block px-4 py-2 bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-400/30 text-purple-200 rounded-full text-sm font-semibold">
             {currentQuestion?.type}
           </div>
         </div>
@@ -119,19 +119,19 @@ export default function InterviewRoom() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
-          <Card className="bg-slate-900 border-slate-800 text-white p-8 mb-8">
-            <h2 className="text-2xl md:text-3xl font-heading font-bold mb-4 leading-relaxed">
+          <Card className="bg-gradient-to-br from-slate-800/90 to-slate-900/90 backdrop-blur-sm border-purple-500/20 text-white p-8 mb-8 shadow-xl">
+            <h2 className="text-xl md:text-2xl font-semibold mb-4 leading-relaxed text-slate-100">
               {currentQuestion?.text}
             </h2>
           </Card>
         </motion.div>
 
-        {/* Waveform Animation (Visual Only) */}
-        <div className="flex justify-center items-center gap-2 h-24 mb-8">
+        {/* Waveform Animation */}
+        <div className="flex justify-center items-center gap-2 h-20 mb-6">
           {[...Array(5)].map((_, i) => (
             <div
               key={i}
-              className={`wave-bar w-2 bg-primary rounded-full transition-all ${
+              className={`wave-bar w-2 bg-gradient-to-t from-purple-500 to-pink-500 rounded-full transition-all ${
                 isRecording ? 'opacity-100' : 'opacity-30'
               }`}
               style={{ height: isRecording ? '60px' : '20px' }}
@@ -140,39 +140,39 @@ export default function InterviewRoom() {
         </div>
 
         {/* Recording Control */}
-        <div className="flex justify-center mb-8">
+        <div className="flex justify-center mb-6">
           <Button
             data-testid="mic-toggle-btn"
             onClick={toggleRecording}
             className={`rounded-full h-20 w-20 ${
               isRecording
-                ? 'bg-destructive hover:bg-destructive/90'
-                : 'bg-primary hover:bg-primary/90'
-            } shadow-lg hover:shadow-xl transition-all`}
+                ? 'bg-gradient-to-br from-red-500 to-pink-600 hover:from-red-600 hover:to-pink-700'
+                : 'bg-gradient-to-br from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700'
+            } shadow-xl hover:shadow-2xl transition-all hover:scale-105`}
           >
             {isRecording ? <MicOff className="h-8 w-8" /> : <Mic className="h-8 w-8" />}
           </Button>
         </div>
 
         {/* Answer Input */}
-        <Card className="bg-slate-900 border-slate-800 p-6 mb-6">
+        <Card className="bg-slate-800/50 backdrop-blur-sm border-purple-500/20 p-6 mb-6 shadow-lg">
           <Textarea
             data-testid="answer-input"
             placeholder="Type your answer here or use voice recording..."
             value={answer}
             onChange={(e) => setAnswer(e.target.value)}
             rows={6}
-            className="bg-slate-800 border-slate-700 text-white placeholder:text-slate-500 text-lg"
+            className="bg-slate-900/50 border-purple-500/30 text-white placeholder:text-slate-400 text-base focus:border-purple-400 transition-colors"
           />
         </Card>
 
         {/* Submit Button */}
-        <div className="flex justify-end">
+        <div className="flex justify-end mb-6">
           <Button
             data-testid="submit-answer-btn"
             onClick={handleSubmitAnswer}
             disabled={submitting}
-            className="bg-primary hover:bg-primary/90 text-white font-medium px-8 py-6 rounded-md text-lg"
+            className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold px-8 py-6 rounded-lg text-base shadow-lg hover:shadow-xl transition-all"
           >
             {submitting ? (
               <>
