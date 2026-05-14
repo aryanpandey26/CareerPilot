@@ -329,22 +329,79 @@ Experience:
                     )}
                   </div>
 
-                  {/* Improvement Suggestions - Full Width with Better Layout */}
+                  {/* Improvement Suggestions - Exciting Design */}
                   {result.improvement_suggestions.length > 0 && (
-                    <Card className="p-6 md:p-8 bg-white/80 backdrop-blur-sm shadow-lg border-0 w-full">
-                      <h3 className="text-xl font-bold text-slate-800 mb-6 flex items-center gap-3" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                        <div className="p-3 bg-blue-100 rounded-xl">
-                          <TrendingUp className="h-6 w-6 text-blue-600" />
-                        </div>
-                        Improvement Suggestions
-                      </h3>
-                      <div className="space-y-3 w-full">
-                        {result.improvement_suggestions.map((suggestion, idx) => (
-                          <div key={idx} className="flex items-start gap-3 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border-2 border-blue-200 hover:border-blue-300 transition-colors w-full">
-                            <span className="text-blue-600 font-bold text-lg flex-shrink-0 min-w-[2rem]">{idx + 1}.</span>
-                            <span className="text-slate-700 text-base leading-relaxed flex-1">{suggestion}</span>
+                    <Card className="p-6 md:p-8 bg-gradient-to-br from-white via-purple-50 to-pink-50 backdrop-blur-sm shadow-2xl border-0 w-full overflow-hidden relative">
+                      {/* Decorative Background Elements */}
+                      <div className="absolute top-0 right-0 w-32 h-32 bg-purple-200 rounded-full blur-3xl opacity-30"></div>
+                      <div className="absolute bottom-0 left-0 w-32 h-32 bg-pink-200 rounded-full blur-3xl opacity-30"></div>
+                      
+                      <div className="relative z-10">
+                        {/* Header */}
+                        <div className="mb-8 text-center">
+                          <div className="inline-flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 rounded-full mb-4 shadow-lg">
+                            <TrendingUp className="h-6 w-6 text-white" />
+                            <h3 className="text-xl font-bold text-white" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                              Boost Your Resume
+                            </h3>
                           </div>
-                        ))}
+                          <p className="text-slate-600 text-sm">Actionable suggestions to increase your ATS score</p>
+                        </div>
+
+                        {/* Suggestions Grid */}
+                        <div className="space-y-4 w-full">
+                          {result.improvement_suggestions.map((suggestion, idx) => {
+                            const colors = [
+                              { bg: 'from-purple-500 to-purple-600', light: 'bg-purple-50', border: 'border-purple-300', icon: '🎯' },
+                              { bg: 'from-blue-500 to-blue-600', light: 'bg-blue-50', border: 'border-blue-300', icon: '💡' },
+                              { bg: 'from-pink-500 to-pink-600', light: 'bg-pink-50', border: 'border-pink-300', icon: '⚡' },
+                              { bg: 'from-green-500 to-green-600', light: 'bg-green-50', border: 'border-green-300', icon: '🚀' },
+                              { bg: 'from-orange-500 to-orange-600', light: 'bg-orange-50', border: 'border-orange-300', icon: '✨' },
+                              { bg: 'from-indigo-500 to-indigo-600', light: 'bg-indigo-50', border: 'border-indigo-300', icon: '🎨' },
+                            ];
+                            const colorScheme = colors[idx % colors.length];
+
+                            return (
+                              <motion.div
+                                key={idx}
+                                initial={{ opacity: 0, x: -20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ duration: 0.4, delay: idx * 0.1 }}
+                                className={`group flex items-start gap-4 p-5 ${colorScheme.light} rounded-2xl border-2 ${colorScheme.border} hover:shadow-xl transition-all duration-300 hover:-translate-y-1 cursor-pointer w-full`}
+                              >
+                                {/* Number Badge */}
+                                <div className={`flex-shrink-0 w-12 h-12 bg-gradient-to-br ${colorScheme.bg} rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-lg group-hover:scale-110 transition-transform`} style={{ fontFamily: 'Poppins, sans-serif' }}>
+                                  {idx + 1}
+                                </div>
+                                
+                                {/* Content */}
+                                <div className="flex-1 pt-1">
+                                  <p className="text-slate-800 text-base leading-relaxed font-medium">
+                                    {suggestion}
+                                  </p>
+                                </div>
+
+                                {/* Icon Badge */}
+                                <div className="flex-shrink-0 text-2xl opacity-70 group-hover:opacity-100 group-hover:scale-125 transition-all">
+                                  {colorScheme.icon}
+                                </div>
+                              </motion.div>
+                            );
+                          })}
+                        </div>
+
+                        {/* Bottom CTA */}
+                        <div className="mt-8 p-5 bg-gradient-to-r from-purple-100 to-pink-100 rounded-2xl border-2 border-purple-200">
+                          <div className="flex items-start gap-3">
+                            <span className="text-2xl">💪</span>
+                            <div>
+                              <p className="text-sm font-bold text-purple-900 mb-1">Pro Tip</p>
+                              <p className="text-sm text-slate-700">
+                                Implementing these suggestions can increase your ATS score by <span className="font-bold text-purple-600">15-25%</span> and significantly improve your chances of getting an interview call!
+                              </p>
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     </Card>
                   )}
