@@ -174,59 +174,71 @@ export default function InterviewRoomWithVideo() {
     }
   };
 
-  const startVideoRecording = () => {
+  const startVideoRecording = (retry = 0) => {
     try {
-      if (webcamRef.current && webcamRef.current.stream) {
-        const stream = webcamRef.current.stream;
-        const mediaRecorder = new MediaRecorder(stream, {
-          mimeType: "video/webm",
-        });
-
-        mediaRecorderRef.current = mediaRecorder;
-        recordedChunksRef.current = [];
-
-        mediaRecorder.ondataavailable = (event) => {
-          if (event.data.size > 0) {
-            recordedChunksRef.current.push(event.data);
-          }
-        };
-
-        mediaRecorder.onstop = () => {
-          const blob = new Blob(recordedChunksRef.current, { type: "video/webm" });
-          const videoUrl = URL.createObjectURL(blob);
-          const recIdx = currentQuestionIndex;
-
-          setVideoRecordings(prev => [
-            ...prev,
-            {
-              questionIndex: recIdx,
-              url: videoUrl,
-              blob: blob,
-              timestamp: new Date().toISOString(),
-            }
-          ]);
-
-          // Track upload promise so we can await it before final navigate
-          const uploadPromise = (async () => {
-            try {
-              const fd = new FormData();
-              fd.append("video", blob, `q${recIdx}.webm`);
-              fd.append("session_id", sessionId);
-              fd.append("question_index", String(recIdx));
-              await axios.post(`${API}/upload-video`, fd, {
-                headers: { "Content-Type": "multipart/form-data" },
-                timeout: 120000,
-              });
-            } catch (err) {
-              console.error("Video upload failed:", err);
-            }
-          })();
-          pendingUploadsRef.current.push(uploadPromise);
-        };
-
-        mediaRecorder.start();
-        setCurrentRecording(mediaRecorder);
+      const stream = webcamRef.current && webcamRef.current.stream;
+      if (!stream) {
+        // Stream not ready yet — try again shortly (max ~3 seconds)
+        if (retry < 15) {
+          setTimeout(() => startVideoRecording(retry + 1), 200);
+        }
+        return;
       }
+      // Already recording? skip.
+      if (
+        mediaRecorderRef.current &&
+        mediaRecorderRef.current.state === "recording"
+      ) {
+        return;
+      }
+      const mediaRecorder = new MediaRecorder(stream, {
+        mimeType: "video/webm",
+      });
+
+      mediaRecorderRef.current = mediaRecorder;
+      recordedChunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          recordedChunksRef.current.push(event.data);
+        }
+      };
+
+      mediaRecorder.onstop = () => {
+        const blob = new Blob(recordedChunksRef.current, { type: "video/webm" });
+        const videoUrl = URL.createObjectURL(blob);
+        const recIdx = currentQuestionIndex;
+
+        setVideoRecordings((prev) => [
+          ...prev,
+          {
+            questionIndex: recIdx,
+            url: videoUrl,
+            blob: blob,
+            timestamp: new Date().toISOString(),
+          },
+        ]);
+
+        // Track upload promise so we can await it before final navigate
+        const uploadPromise = (async () => {
+          try {
+            const fd = new FormData();
+            fd.append("video", blob, `q${recIdx}.webm`);
+            fd.append("session_id", sessionId);
+            fd.append("question_index", String(recIdx));
+            await axios.post(`${API}/upload-video`, fd, {
+              headers: { "Content-Type": "multipart/form-data" },
+              timeout: 120000,
+            });
+          } catch (err) {
+            console.error("Video upload failed:", err);
+          }
+        })();
+        pendingUploadsRef.current.push(uploadPromise);
+      };
+
+      mediaRecorder.start();
+      setCurrentRecording(mediaRecorder);
     } catch (error) {
       console.error("Error starting video recording:", error);
     }
@@ -622,6 +634,21 @@ export default function InterviewRoomWithVideo() {
                     audio={true}
                     mirrored
                     className="w-full h-full object-cover"
+                    onUserMedia={() => {
+                      // Stream is finally ready — start recording the CURRENT question
+                      // if a recorder isn't already running. This fixes the race where
+                      // Q1's recording was skipped because the stream wasn't ready yet.
+                      if (
+                        !mediaRecorderRef.current ||
+                        mediaRecorderRef.current.state !== "recording"
+                      ) {
+                        startVideoRecording();
+                      }
+                    }}
+                    onUserMediaError={(err) => {
+                      console.error("Webcam getUserMedia error:", err);
+                      toast.error("Camera/mic access was denied. Recording disabled.");
+                    }}
                   />
                 </div>
               ) : (
