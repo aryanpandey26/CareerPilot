@@ -260,88 +260,93 @@ Experience:
           >
             {result ? (
               <div className="space-y-6">
-                {/* ATS Score */}
-                <Card className="p-8 bg-gradient-to-br from-purple-50 to-pink-50 border-0 shadow-xl">
-                  <div className="text-center">
-                    <p className="text-sm font-semibold text-purple-600 uppercase tracking-wider mb-3">
-                      ATS Match Score
-                    </p>
-                    <div className={`text-7xl font-bold mb-3 ${getScoreColor(result.ats_score)}`} style={{ fontFamily: 'Poppins, sans-serif' }}>
-                      {result.ats_score}%
+                <div className="grid grid-cols-1 gap-6">
+                  {/* ATS Score */}
+                  <Card className="p-8 bg-gradient-to-br from-purple-50 to-pink-50 border-0 shadow-xl">
+                    <div className="text-center">
+                      <p className="text-sm font-semibold text-purple-600 uppercase tracking-wider mb-3">
+                        ATS Match Score
+                      </p>
+                      <div className={`text-7xl font-bold mb-3 ${getScoreColor(result.ats_score)}`} style={{ fontFamily: 'Poppins, sans-serif' }}>
+                        {result.ats_score}%
+                      </div>
+                      <p className={`text-lg font-semibold ${getScoreColor(result.ats_score)}`}>
+                        {getScoreLabel(result.ats_score)}
+                      </p>
                     </div>
-                    <p className={`text-lg font-semibold ${getScoreColor(result.ats_score)}`}>
-                      {getScoreLabel(result.ats_score)}
-                    </p>
+                  </Card>
+
+                  {/* Skills Grid */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Matching Skills */}
+                    {result.matching_skills.length > 0 && (
+                      <Card className="p-6 bg-white/80 backdrop-blur-sm shadow-lg border-0">
+                        <div className="flex items-center gap-3 mb-4">
+                          <div className="p-2 bg-green-100 rounded-lg">
+                            <CheckCircle2 className="h-5 w-5 text-green-600" />
+                          </div>
+                          <h3 className="text-lg font-bold text-slate-800" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                            Matching Skills
+                          </h3>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {result.matching_skills.map((skill, idx) => (
+                            <span
+                              key={idx}
+                              className="px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-full text-sm font-semibold shadow-md"
+                            >
+                              {skill}
+                            </span>
+                          ))}
+                        </div>
+                      </Card>
+                    )}
+
+                    {/* Missing Skills */}
+                    {result.missing_skills.length > 0 && (
+                      <Card className="p-6 bg-white/80 backdrop-blur-sm shadow-lg border-0">
+                        <div className="flex items-center gap-3 mb-4">
+                          <div className="p-2 bg-red-100 rounded-lg">
+                            <AlertCircle className="h-5 w-5 text-red-600" />
+                          </div>
+                          <h3 className="text-lg font-bold text-slate-800" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                            Missing Skills
+                          </h3>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {result.missing_skills.map((skill, idx) => (
+                            <span
+                              key={idx}
+                              className="px-4 py-2 bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-full text-sm font-semibold shadow-md"
+                            >
+                              {skill}
+                            </span>
+                          ))}
+                        </div>
+                      </Card>
+                    )}
                   </div>
-                </Card>
 
-                {/* Matching Skills */}
-                {result.matching_skills.length > 0 && (
-                  <Card className="p-6 bg-white/80 backdrop-blur-sm shadow-lg border-0">
-                    <div className="flex items-center gap-3 mb-4">
-                      <div className="p-2 bg-green-100 rounded-lg">
-                        <CheckCircle2 className="h-5 w-5 text-green-600" />
-                      </div>
-                      <h3 className="text-lg font-bold text-slate-800" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                        Matching Skills
+                  {/* Improvement Suggestions - Full Width */}
+                  {result.improvement_suggestions.length > 0 && (
+                    <Card className="p-8 bg-white/80 backdrop-blur-sm shadow-lg border-0">
+                      <h3 className="text-xl font-bold text-slate-800 mb-6 flex items-center gap-3" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                        <div className="p-3 bg-blue-100 rounded-xl">
+                          <TrendingUp className="h-6 w-6 text-blue-600" />
+                        </div>
+                        Improvement Suggestions
                       </h3>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      {result.matching_skills.map((skill, idx) => (
-                        <span
-                          key={idx}
-                          className="px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-full text-sm font-semibold shadow-md"
-                        >
-                          {skill}
-                        </span>
-                      ))}
-                    </div>
-                  </Card>
-                )}
-
-                {/* Missing Skills */}
-                {result.missing_skills.length > 0 && (
-                  <Card className="p-6 bg-white/80 backdrop-blur-sm shadow-lg border-0">
-                    <div className="flex items-center gap-3 mb-4">
-                      <div className="p-2 bg-red-100 rounded-lg">
-                        <AlertCircle className="h-5 w-5 text-red-600" />
+                      <div className="space-y-4">
+                        {result.improvement_suggestions.map((suggestion, idx) => (
+                          <div key={idx} className="flex items-start gap-4 p-5 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border-2 border-blue-200 hover:border-blue-300 transition-colors">
+                            <span className="text-blue-600 font-bold text-xl flex-shrink-0">{idx + 1}.</span>
+                            <span className="text-slate-700 text-base leading-relaxed flex-1">{suggestion}</span>
+                          </div>
+                        ))}
                       </div>
-                      <h3 className="text-lg font-bold text-slate-800" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                        Missing Skills
-                      </h3>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      {result.missing_skills.map((skill, idx) => (
-                        <span
-                          key={idx}
-                          className="px-4 py-2 bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-full text-sm font-semibold shadow-md"
-                        >
-                          {skill}
-                        </span>
-                      ))}
-                    </div>
-                  </Card>
-                )}
-
-                {/* Improvement Suggestions */}
-                {result.improvement_suggestions.length > 0 && (
-                  <Card className="p-6 bg-white/80 backdrop-blur-sm shadow-lg border-0">
-                    <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                      <div className="p-2 bg-blue-100 rounded-lg">
-                        <TrendingUp className="h-5 w-5 text-blue-600" />
-                      </div>
-                      Improvement Suggestions
-                    </h3>
-                    <ul className="space-y-3">
-                      {result.improvement_suggestions.map((suggestion, idx) => (
-                        <li key={idx} className="flex items-start gap-3 p-3 bg-blue-50 rounded-lg">
-                          <span className="text-blue-600 font-bold">•</span>
-                          <span className="text-slate-700">{suggestion}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </Card>
-                )}
+                    </Card>
+                  )}
+                </div>
 
                 {/* Next Step */}
                 <Button

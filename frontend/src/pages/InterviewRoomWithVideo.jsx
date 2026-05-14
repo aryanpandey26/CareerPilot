@@ -84,15 +84,50 @@ export default function InterviewRoomWithVideo() {
   };
 
   const handleVisibilityChange = () => {
-    if (document.hidden) {
+    if (document.hidden && session) {
+      const newWarningCount = cheatingWarnings + 1;
       logCheatingEvent("Tab Switch Detected", "User switched to another tab or window");
-      showCheatingWarning("Tab Switch Detected! Please stay on this page during the interview.");
+      
+      // Update state immediately
+      setCheatingWarnings(newWarningCount);
+      
+      if (newWarningCount >= 2) {
+        setWarningMessage("Interview Cancelled! You have exceeded the maximum number of warnings (2/2).");
+        setShowWarningModal(true);
+        
+        // Cancel interview after showing final warning
+        setTimeout(() => {
+          toast.error("Interview cancelled due to repeated violations");
+          navigate("/dashboard");
+        }, 2000);
+      } else {
+        setWarningMessage(`Warning ${newWarningCount}/2: Tab Switch Detected! Please stay on this page during the interview. One more violation will cancel your interview.`);
+        setShowWarningModal(true);
+      }
     }
     setIsTabActive(!document.hidden);
   };
 
   const handleWindowBlur = () => {
-    logCheatingEvent("Window Blur", "User clicked outside the interview window");
+    if (session && !document.hidden) {
+      const newWarningCount = cheatingWarnings + 1;
+      logCheatingEvent("Window Focus Lost", "User clicked outside the interview window");
+      
+      setCheatingWarnings(newWarningCount);
+      
+      if (newWarningCount >= 2) {
+        setWarningMessage("Interview Cancelled! You have exceeded the maximum number of warnings (2/2).");
+        setShowWarningModal(true);
+        
+        setTimeout(() => {
+          toast.error("Interview cancelled due to repeated violations");
+          navigate("/dashboard");
+        }, 2000);
+      } else {
+        setWarningMessage(`Warning ${newWarningCount}/2: Focus Lost! Please keep the interview window active. One more violation will cancel your interview.`);
+        setShowWarningModal(true);
+      }
+    }
   };
 
   const handleWindowFocus = () => {
@@ -107,20 +142,6 @@ export default function InterviewRoomWithVideo() {
       questionIndex: currentQuestionIndex,
     };
     setCheatingEvents(prev => [...prev, event]);
-  };
-
-  const showCheatingWarning = (message) => {
-    const newWarningCount = cheatingWarnings + 1;
-    setCheatingWarnings(newWarningCount);
-    setWarningMessage(message);
-    setShowWarningModal(true);
-
-    if (newWarningCount >= 2) {
-      setTimeout(() => {
-        toast.error("Interview cancelled due to suspicious activity");
-        navigate("/");
-      }, 3000);
-    }
   };
 
   const startVideoRecording = () => {
@@ -170,10 +191,8 @@ export default function InterviewRoomWithVideo() {
   };
 
   const handleNextQuestion = () => {
-    if (!currentAnswer.trim()) {
-      toast.error("Please provide an answer");
-      return;
-    }
+    // Allow empty answers for skipped questions
+    const answerText = currentAnswer.trim() || "[No answer provided]";
 
     // Stop current video recording
     stopVideoRecording();
@@ -182,51 +201,65 @@ export default function InterviewRoomWithVideo() {
     const newAnswer = {
       questionIndex: currentQuestionIndex,
       question: session.questions[currentQuestionIndex].text,
-      answer: currentAnswer,
+      answer: answerText,
       timestamp: new Date().toISOString(),
     };
 
-    setAnswers(prev => [...prev, newAnswer]);
+    const updatedAnswers = [...answers, newAnswer];
+    setAnswers(updatedAnswers);
     setCurrentAnswer("");
 
     // Move to next question or finish
     if (currentQuestionIndex < session.questions.length - 1) {
       setCurrentQuestionIndex(currentQuestionIndex + 1);
+      toast.success("Answer saved! Moving to next question...");
     } else {
-      submitInterview();
+      submitInterview(updatedAnswers);
     }
   };
 
-  const submitInterview = async () => {
+  const submitInterview = async (finalAnswers) => {
     toast.info("Submitting interview and evaluating all answers...");
     
     try {
+      // Use finalAnswers parameter to ensure we have the latest answers
+      const answersToSubmit = finalAnswers || answers;
+      
       // Evaluate all answers
-      const evaluations = [];
-      for (let i = 0; i < answers.length; i++) {
-        const answer = answers[i];
-        const response = await axios.post(`${API}/evaluate-answer`, {
-          session_id: sessionId,
-          question_index: answer.questionIndex,
-          answer: answer.answer,
-          skill_tag: session.questions[answer.questionIndex].type,
-        });
-        evaluations.push(response.data);
+      for (let i = 0; i < answersToSubmit.length; i++) {
+        const answer = answersToSubmit[i];
+        try {
+          await axios.post(`${API}/evaluate-answer`, {
+            session_id: sessionId,
+            question_index: answer.questionIndex,
+            answer: answer.answer,
+            skill_tag: session.questions[answer.questionIndex].type,
+          });
+        } catch (error) {
+          console.error(`Error evaluating answer ${i + 1}:`, error);
+          // Continue with other answers even if one fails
+        }
       }
 
       // Save cheating analysis
-      await axios.post(`${API}/save-cheating-analysis`, {
-        session_id: sessionId,
-        cheating_events: cheatingEvents,
-        total_warnings: cheatingWarnings,
-        video_count: videoRecordings.length,
-      });
+      try {
+        await axios.post(`${API}/save-cheating-analysis`, {
+          session_id: sessionId,
+          cheating_events: cheatingEvents,
+          total_warnings: cheatingWarnings,
+          video_count: videoRecordings.length,
+        });
+      } catch (error) {
+        console.error("Error saving cheating analysis:", error);
+      }
 
       toast.success("Interview completed! Redirecting to results...");
-      navigate(`/results/${sessionId}`);
+      setTimeout(() => {
+        navigate(`/results/${sessionId}`);
+      }, 1000);
     } catch (error) {
       console.error("Error submitting interview:", error);
-      toast.error("Failed to submit interview");
+      toast.error("Failed to submit interview. Please try again.");
     }
   };
 
