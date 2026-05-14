@@ -171,16 +171,33 @@ export default function InterviewRoomWithVideo() {
         mediaRecorder.onstop = () => {
           const blob = new Blob(recordedChunksRef.current, { type: "video/webm" });
           const videoUrl = URL.createObjectURL(blob);
-          
+          const recIdx = currentQuestionIndex;
+
           setVideoRecordings(prev => [
             ...prev,
             {
-              questionIndex: currentQuestionIndex,
+              questionIndex: recIdx,
               url: videoUrl,
               blob: blob,
               timestamp: new Date().toISOString(),
             }
           ]);
+
+          // Fire-and-forget upload to backend
+          (async () => {
+            try {
+              const fd = new FormData();
+              fd.append("video", blob, `q${recIdx}.webm`);
+              fd.append("session_id", sessionId);
+              fd.append("question_index", String(recIdx));
+              await axios.post(`${API}/upload-video`, fd, {
+                headers: { "Content-Type": "multipart/form-data" },
+                timeout: 60000,
+              });
+            } catch (err) {
+              console.error("Video upload failed:", err);
+            }
+          })();
         };
 
         mediaRecorder.start();
@@ -325,6 +342,15 @@ export default function InterviewRoomWithVideo() {
         });
       } catch (error) {
         console.error("Error saving cheating analysis:", error);
+      }
+
+      // Trigger deep LLM-based cheating analysis (non-blocking; results shown on ResultsPage)
+      try {
+        await axios.post(`${API}/analyze-cheating-deep`, {
+          session_id: sessionId,
+        });
+      } catch (error) {
+        console.error("Deep cheating analysis failed:", error);
       }
 
       toast.success("Interview completed! Redirecting to results...");

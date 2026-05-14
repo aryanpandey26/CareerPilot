@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Trophy, TrendingUp, Home, BarChart3 } from "lucide-react";
+import { Trophy, TrendingUp, Home, BarChart3, ShieldAlert, ShieldCheck, Shield } from "lucide-react";
 import axios from "axios";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -13,6 +13,8 @@ export default function ResultsPage() {
   const { sessionId } = useParams();
   const navigate = useNavigate();
   const [session, setSession] = useState(null);
+  const [deepCheat, setDeepCheat] = useState(null);
+  const [videos, setVideos] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -21,8 +23,14 @@ export default function ResultsPage() {
 
   const loadResults = async () => {
     try {
-      const response = await axios.get(`${API}/interview-session/${sessionId}`);
-      setSession(response.data);
+      const [sessRes, deepRes, vidRes] = await Promise.allSettled([
+        axios.get(`${API}/interview-session/${sessionId}`),
+        axios.get(`${API}/analyze-cheating-deep/${sessionId}`),
+        axios.get(`${API}/interview-videos/${sessionId}`),
+      ]);
+      if (sessRes.status === "fulfilled") setSession(sessRes.value.data);
+      if (deepRes.status === "fulfilled") setDeepCheat(deepRes.value.data);
+      if (vidRes.status === "fulfilled") setVideos(vidRes.value.data?.videos || []);
       setLoading(false);
     } catch (error) {
       console.error("Error loading results:", error);
@@ -95,6 +103,156 @@ export default function ResultsPage() {
             </p>
           </Card>
         </motion.div>
+
+        {/* Proctoring / Cheating Analysis */}
+        {deepCheat && (
+          <motion.div
+            data-testid="deep-cheating-card"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="mb-12"
+          >
+            <Card
+              className={`p-8 border-2 ${
+                deepCheat.risk_level === "high"
+                  ? "border-rose-400 bg-rose-50"
+                  : deepCheat.risk_level === "medium"
+                  ? "border-amber-400 bg-amber-50"
+                  : "border-emerald-400 bg-emerald-50"
+              }`}
+            >
+              <div className="flex items-start gap-4">
+                <div
+                  className={`shrink-0 p-3 rounded-xl ${
+                    deepCheat.risk_level === "high"
+                      ? "bg-rose-100 text-rose-600"
+                      : deepCheat.risk_level === "medium"
+                      ? "bg-amber-100 text-amber-600"
+                      : "bg-emerald-100 text-emerald-600"
+                  }`}
+                >
+                  {deepCheat.risk_level === "high" ? (
+                    <ShieldAlert className="h-7 w-7" />
+                  ) : deepCheat.risk_level === "medium" ? (
+                    <Shield className="h-7 w-7" />
+                  ) : (
+                    <ShieldCheck className="h-7 w-7" />
+                  )}
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <h3 className="text-xl font-semibold text-slate-800">
+                      Proctoring Analysis —{" "}
+                      <span className="capitalize">{deepCheat.risk_level}</span> Risk
+                    </h3>
+                    <span className="text-2xl font-bold text-slate-800">
+                      {deepCheat.risk_score}/100
+                    </span>
+                  </div>
+                  <p className="text-slate-700 mt-2">{deepCheat.summary}</p>
+
+                  <div className="grid md:grid-cols-2 gap-4 mt-5">
+                    {deepCheat.multiple_voice_indicators?.length > 0 && (
+                      <div>
+                        <p className="text-sm font-semibold text-slate-700 mb-1">
+                          Multi-voice indicators
+                        </p>
+                        <ul className="text-sm text-slate-600 list-disc pl-5 space-y-1">
+                          {deepCheat.multiple_voice_indicators.map((m, i) => (
+                            <li key={i}>{m}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    {deepCheat.gaze_drift_indicators?.length > 0 && (
+                      <div>
+                        <p className="text-sm font-semibold text-slate-700 mb-1">
+                          Gaze / focus drift
+                        </p>
+                        <ul className="text-sm text-slate-600 list-disc pl-5 space-y-1">
+                          {deepCheat.gaze_drift_indicators.map((m, i) => (
+                            <li key={i}>{m}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    {deepCheat.scripted_answer_indicators?.length > 0 && (
+                      <div>
+                        <p className="text-sm font-semibold text-slate-700 mb-1">
+                          Scripted-answer signals
+                        </p>
+                        <ul className="text-sm text-slate-600 list-disc pl-5 space-y-1">
+                          {deepCheat.scripted_answer_indicators.map((m, i) => (
+                            <li key={i}>{m}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    {deepCheat.transcript_text_mismatch?.length > 0 && (
+                      <div>
+                        <p className="text-sm font-semibold text-slate-700 mb-1">
+                          Transcript / text mismatches
+                        </p>
+                        <ul className="text-sm text-slate-600 list-disc pl-5 space-y-1">
+                          {deepCheat.transcript_text_mismatch.map((m, i) => (
+                            <li key={i}>{m}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+
+                  {deepCheat.recommendations?.length > 0 && (
+                    <div className="mt-5 pt-4 border-t border-slate-200">
+                      <p className="text-sm font-semibold text-slate-700 mb-2">
+                        Recommendations
+                      </p>
+                      <ul className="text-sm text-slate-600 list-disc pl-5 space-y-1">
+                        {deepCheat.recommendations.map((r, i) => (
+                          <li key={i}>{r}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </Card>
+          </motion.div>
+        )}
+
+        {/* Recorded Video Clips */}
+        {videos.length > 0 && (
+          <motion.div
+            data-testid="recorded-videos"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="mb-12"
+          >
+            <Card className="p-8">
+              <h3 className="text-xl font-semibold text-slate-800 mb-4">
+                Recorded Clips ({videos.length})
+              </h3>
+              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {videos.map((v) => (
+                  <div key={v.id} className="rounded-lg overflow-hidden border border-slate-200 bg-slate-50">
+                    <video
+                      controls
+                      preload="metadata"
+                      className="w-full aspect-video bg-black"
+                      src={`${BACKEND_URL}${v.url_path}`}
+                    />
+                    <div className="p-3 text-xs text-slate-600 flex items-center justify-between">
+                      <span>Question {v.question_index + 1}</span>
+                      <span>{(v.size_bytes / 1024).toFixed(1)} KB</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </Card>
+          </motion.div>
+        )}
 
         {/* Detailed Results */}
         <div className="grid lg:grid-cols-2 gap-8 mb-12">

@@ -335,88 +335,17 @@ Rules:
         logging.error(f"Error generating questions: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@api_router.post("/evaluate-answer", response_model=EvaluationResult)
+@api_router.post("/evaluate-answer", deprecated=True)
 async def evaluate_answer(submission: AnswerSubmission):
-    """Evaluate candidate's answer"""
-    try:
-        # Get question from session
-        session = await db.interview_sessions.find_one({"id": submission.session_id}, {"_id": 0})
-        if not session:
-            raise HTTPException(status_code=404, detail="Session not found")
-        
-        question = session["questions"][submission.question_index]["text"]
-        
-        prompt = f"""Evaluate the candidate's answer.
-
-Question: {question}
-Expected Skill: {submission.skill_tag}
-User Answer: {submission.answer}
-
-Assess on:
-- Technical Accuracy (0-10)
-- Depth of Explanation (0-10)
-- Clarity & Structure (0-10)
-- Confidence (0-10, inferred from language certainty)
-
-Provide:
-- Strengths
-- Weaknesses
-- Model Answer
-- Improvement Suggestions
-- Final Score (0-100)
-
-Return strictly in JSON:
-{{
-  "technical_accuracy": number,
-  "depth": number,
-  "clarity": number,
-  "confidence": number,
-  "overall_score": number,
-  "strengths": [],
-  "weaknesses": [],
-  "model_answer": "",
-  "improvement_suggestions": []
-}}
-
-Scoring Logic:
-Overall Score = Weighted average:
-- Technical Accuracy: 40%
-- Depth: 25%
-- Clarity: 20%
-- Confidence: 15%"""
-        
-        system_message = "You are a professional technical interviewer. Evaluate answers objectively and provide constructive feedback."
-        response = await call_llm(prompt, system_message)
-        
-        # Parse JSON response
-        response_clean = response.strip()
-        if response_clean.startswith("```"):
-            response_clean = response_clean.split("```")[1]
-            if response_clean.startswith("json"):
-                response_clean = response_clean[4:]
-        response_clean = response_clean.strip()
-        
-        result_data = json.loads(response_clean)
-        evaluation = EvaluationResult(**result_data)
-        
-        # Store answer and evaluation in session
-        answer_data = {
-            "question_index": submission.question_index,
-            "answer": submission.answer,
-            "evaluation": result_data,
-            "timestamp": datetime.now(timezone.utc).isoformat()
-        }
-        
-        await db.interview_sessions.update_one(
-            {"id": submission.session_id},
-            {"$push": {"answers": answer_data}}
-        )
-        
-        return evaluation
-        
-    except Exception as e:
-        logging.error(f"Error evaluating answer: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+    """DEPRECATED: Use /api/evaluate-interview-batch instead.
+    
+    Per-question evaluation is no longer supported. All answers must be
+    submitted in a single batch at the end of the interview.
+    """
+    raise HTTPException(
+        status_code=410,
+        detail="Endpoint deprecated. Use POST /api/evaluate-interview-batch to evaluate all answers at the end of the interview."
+    )
 
 @api_router.post("/interview-session", response_model=InterviewSession)
 async def create_interview_session(request: InterviewSessionRequest):
@@ -583,20 +512,42 @@ class BatchAnswerItem(BaseModel):
 class BatchEvaluationRequest(BaseModel):
     session_id: str
     answers: List[BatchAnswerItem]
+    force: bool = False  # bypass idempotency guard if True
 
 class BatchEvaluationResponse(BaseModel):
     model_config = ConfigDict(extra="ignore")
     session_id: str
     evaluations: List[Dict[str, Any]]
     average_score: float
+    cached: bool = False
 
 @api_router.post("/evaluate-interview-batch", response_model=BatchEvaluationResponse)
 async def evaluate_interview_batch(request: BatchEvaluationRequest):
-    """Evaluate ALL interview answers at once on final submit"""
+    """Evaluate ALL interview answers at once on final submit.
+    
+    Idempotency: if the session has already been evaluated (`evaluated_at` set)
+    and the same number of answers were stored, return cached evaluations.
+    Pass `force=True` to re-evaluate.
+    """
     try:
         session = await db.interview_sessions.find_one({"id": request.session_id}, {"_id": 0})
         if not session:
             raise HTTPException(status_code=404, detail="Session not found")
+
+        # Idempotency guard
+        if (not request.force
+                and session.get("evaluated_at")
+                and session.get("answers")
+                and len(session["answers"]) == len(request.answers)):
+            cached_evals = [a.get("evaluation", {}) for a in session["answers"]]
+            scores = [float(e.get("overall_score", 0)) for e in cached_evals
+                      if isinstance(e.get("overall_score"), (int, float))]
+            return BatchEvaluationResponse(
+                session_id=request.session_id,
+                evaluations=cached_evals,
+                average_score=round(sum(scores) / len(scores), 2) if scores else 0.0,
+                cached=True,
+            )
 
         # Build a single batched prompt: model returns evaluations as JSON array
         qa_pairs = []
@@ -710,19 +661,21 @@ async def transcribe_audio(
         tmp_path = Path(f"/tmp/{uuid.uuid4().hex}{ext}")
         tmp_path.write_bytes(content)
 
-        stt = OpenAISpeechToText(api_key=LLM_API_KEY)
-        with open(tmp_path, "rb") as audio_file:
-            response = await stt.transcribe(
-                file=audio_file,
-                model="whisper-1",
-                response_format="json",
-                language="en",
-            )
-
+        # Use try/finally to ensure cleanup
         try:
-            tmp_path.unlink(missing_ok=True)
-        except Exception:
-            pass
+            stt = OpenAISpeechToText(api_key=LLM_API_KEY)
+            with open(tmp_path, "rb") as audio_file:
+                response = await stt.transcribe(
+                    file=audio_file,
+                    model="whisper-1",
+                    response_format="json",
+                    language="en",
+                )
+        finally:
+            try:
+                tmp_path.unlink(missing_ok=True)
+            except Exception:
+                pass
 
         transcript = getattr(response, "text", None) or str(response)
 
@@ -743,6 +696,181 @@ async def transcribe_audio(
     except Exception as e:
         logging.error(f"Error transcribing audio: {e}")
         raise HTTPException(status_code=500, detail=f"Transcription failed: {str(e)}")
+
+
+# ---------- Video Upload & Persistence ----------
+VIDEO_UPLOAD_DIR = Path("/app/backend/uploads/videos")
+VIDEO_UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+MAX_VIDEO_MB = 50
+
+@api_router.post("/upload-video")
+async def upload_video(
+    video: UploadFile = File(...),
+    session_id: str = Form(...),
+    question_index: int = Form(...),
+):
+    """Persist an interview video clip to disk and record metadata in MongoDB."""
+    try:
+        content = await video.read()
+        size_mb = len(content) / (1024 * 1024)
+        if not content:
+            raise HTTPException(status_code=400, detail="Empty video payload")
+        if size_mb > MAX_VIDEO_MB:
+            raise HTTPException(status_code=413, detail=f"Video exceeds {MAX_VIDEO_MB}MB limit")
+
+        # Sanitize extension
+        ext = ".webm"
+        if video.filename and "." in video.filename:
+            cand = "." + video.filename.rsplit(".", 1)[-1].lower()
+            if cand in {".webm", ".mp4", ".mov", ".mkv"}:
+                ext = cand
+
+        video_id = str(uuid.uuid4())
+        rel_path = f"{session_id}/{video_id}{ext}"
+        abs_path = VIDEO_UPLOAD_DIR / rel_path
+        abs_path.parent.mkdir(parents=True, exist_ok=True)
+        abs_path.write_bytes(content)
+
+        meta = {
+            "id": video_id,
+            "session_id": session_id,
+            "question_index": question_index,
+            "filename": video.filename,
+            "stored_path": str(abs_path),
+            "url_path": f"/api/videos/{session_id}/{video_id}{ext}",
+            "size_bytes": len(content),
+            "content_type": video.content_type or "video/webm",
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+        }
+        await db.interview_videos.insert_one(meta)
+        meta.pop("_id", None)
+        meta.pop("stored_path", None)  # do not leak server path
+        return {"success": True, "video": meta}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Error uploading video: {e}")
+        raise HTTPException(status_code=500, detail=f"Video upload failed: {str(e)}")
+
+
+@api_router.get("/interview-videos/{session_id}")
+async def list_session_videos(session_id: str):
+    """List all video metadata for a session."""
+    items = await db.interview_videos.find(
+        {"session_id": session_id}, {"_id": 0, "stored_path": 0}
+    ).sort("question_index", 1).to_list(200)
+    return {"session_id": session_id, "videos": items}
+
+
+# ---------- Deep LLM-based Cheating Analysis ----------
+class DeepCheatingRequest(BaseModel):
+    session_id: str
+
+@api_router.post("/analyze-cheating-deep")
+async def analyze_cheating_deep(req: DeepCheatingRequest):
+    """Run an LLM-driven deep cheating analysis combining:
+    - Tab-switch / focus-loss events
+    - Audio transcript characteristics (multiple voices, scripted answers)
+    - Answer timing patterns (proxy for gaze/attention drift)
+    """
+    try:
+        session = await db.interview_sessions.find_one({"id": req.session_id}, {"_id": 0})
+        if not session:
+            raise HTTPException(status_code=404, detail="Session not found")
+
+        cheating_doc = await db.cheating_analyses.find_one(
+            {"session_id": req.session_id}, {"_id": 0}
+        ) or {}
+
+        transcripts = await db.audio_transcripts.find(
+            {"session_id": req.session_id}, {"_id": 0}
+        ).sort("question_index", 1).to_list(100)
+
+        videos = await db.interview_videos.find(
+            {"session_id": req.session_id}, {"_id": 0, "stored_path": 0}
+        ).to_list(100)
+
+        prompt = f"""You are a proctoring AI. Analyze this interview for cheating signals.
+
+Tab-switch / focus events (gaze-drift proxy):
+{json.dumps(cheating_doc.get("cheating_events", []), indent=2)}
+Total warnings: {cheating_doc.get("total_warnings", 0)}
+
+Audio transcripts per question (look for multi-voice indicators, scripted reading, abrupt topic shifts):
+{json.dumps(transcripts[:20], indent=2)}
+
+Submitted text answers (compare with transcripts for inconsistencies):
+{json.dumps([{"q": a.get("question_index"), "a": a.get("answer", "")[:500]} for a in session.get("answers", [])], indent=2)}
+
+Recorded video clip count: {len(videos)}
+
+Return STRICT JSON (no markdown):
+{{
+  "risk_score": 0-100,
+  "risk_level": "low" | "medium" | "high",
+  "multiple_voice_indicators": [string, ...],
+  "gaze_drift_indicators": [string, ...],
+  "scripted_answer_indicators": [string, ...],
+  "transcript_text_mismatch": [string, ...],
+  "summary": "1-2 sentence verdict",
+  "recommendations": [string, ...]
+}}
+
+Scoring rubric:
+- 0-25 low: minor or no concerns
+- 26-60 medium: at least 1 strong signal (e.g., 2 tab switches OR scripted tone)
+- 61-100 high: multiple converging signals OR transcript clearly indicates external help"""
+
+        system = "You are a strict but fair proctoring analyst. Return JSON only."
+        response = await call_llm(prompt, system)
+
+        clean = response.strip()
+        if clean.startswith("```"):
+            clean = clean.split("```")[1]
+            if clean.startswith("json"):
+                clean = clean[4:]
+        clean = clean.strip()
+        result = json.loads(clean)
+        result["session_id"] = req.session_id
+        result["generated_at"] = datetime.now(timezone.utc).isoformat()
+
+        # Persist (overwrite per session)
+        await db.deep_cheating_analyses.update_one(
+            {"session_id": req.session_id},
+            {"$set": result},
+            upsert=True,
+        )
+        # Update flag on session
+        await db.interview_sessions.update_one(
+            {"id": req.session_id},
+            {"$set": {"deep_risk_level": result.get("risk_level", "low"),
+                      "deep_risk_score": result.get("risk_score", 0)}}
+        )
+        return result
+
+    except HTTPException:
+        raise
+    except json.JSONDecodeError as e:
+        logging.error(f"Deep cheating JSON parse error: {e}")
+        raise HTTPException(status_code=500, detail="Could not parse cheating analysis output")
+    except Exception as e:
+        logging.error(f"Deep cheating analysis error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.get("/analyze-cheating-deep/{session_id}")
+async def get_deep_cheating(session_id: str):
+    """Retrieve the latest deep cheating analysis for a session."""
+    doc = await db.deep_cheating_analyses.find_one({"session_id": session_id}, {"_id": 0})
+    if not doc:
+        raise HTTPException(status_code=404, detail="No deep analysis available for this session")
+    return doc
+
+
+# Static video serving (after router so /api/videos is matched first)
+from fastapi.staticfiles import StaticFiles
+app.mount("/api/videos", StaticFiles(directory=str(VIDEO_UPLOAD_DIR)), name="videos")
 
 
 # Include the router in the main app
