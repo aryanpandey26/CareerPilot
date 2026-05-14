@@ -193,7 +193,7 @@ export default function InterviewRoom() {
           </Button>
         </div>
 
-        {/* Tips & Alert Section */}
+        {/* Dynamic Status & Tips Section */}
         <Card className="bg-gradient-to-r from-blue-900/40 to-purple-900/40 backdrop-blur-sm border-blue-400/30 p-6 mt-8">
           <div className="flex items-start gap-4">
             <div className="flex-shrink-0">
@@ -204,21 +204,34 @@ export default function InterviewRoom() {
               </div>
             </div>
             <div className="flex-1">
-              <h3 className="text-blue-200 font-semibold text-base mb-2">Interview Tips</h3>
-              <ul className="text-blue-100/80 text-sm space-y-1.5">
-                <li className="flex items-start gap-2">
-                  <span className="text-blue-400 mt-0.5">•</span>
-                  <span>Structure your answer with clear examples and specific details</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-blue-400 mt-0.5">•</span>
-                  <span>Take your time to think before responding - quality over speed</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-blue-400 mt-0.5">•</span>
-                  <span>Use the STAR method: Situation, Task, Action, Result</span>
-                </li>
-              </ul>
+              <h3 className="text-blue-200 font-semibold text-base mb-2">
+                {submitting ? "Evaluating Your Answer..." : `Question ${currentQuestionIndex + 1} of ${session?.questions.length}`}
+              </h3>
+              <div className="text-blue-100/80 text-sm space-y-2">
+                {submitting ? (
+                  <p>AI is analyzing your response. This may take a few moments...</p>
+                ) : answer.length > 0 ? (
+                  <p>Great! You've written {answer.split(' ').length} words. Review your answer and submit when ready.</p>
+                ) : (
+                  <>
+                    <p className="font-medium text-blue-200">Pro Tips:</p>
+                    <ul className="space-y-1.5 ml-2">
+                      <li className="flex items-start gap-2">
+                        <span className="text-blue-400 mt-0.5">•</span>
+                        <span>Use the STAR method: Situation, Task, Action, Result</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-blue-400 mt-0.5">•</span>
+                        <span>Include specific examples and quantifiable results</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-blue-400 mt-0.5">•</span>
+                        <span>Take your time - quality answers lead to better feedback</span>
+                      </li>
+                    </ul>
+                  </>
+                )}
+              </div>
             </div>
           </div>
         </Card>
