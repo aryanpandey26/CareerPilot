@@ -16,15 +16,11 @@ Build an AI-powered mock interview platform with:
 - DB: MongoDB (NOT PostgreSQL — environment mandate)
 
 ## Implemented (Feb 2026 — current fork)
-- [Feb 14] **Video upload + persistence** — `POST /api/upload-video`, `GET /api/interview-videos/{sid}`, static mount at `/api/videos`. Frontend auto-uploads each recorded clip on `mediaRecorder.onstop`.
-- [Feb 14] **Deep LLM cheating analysis** — `POST /api/analyze-cheating-deep` + `GET /api/analyze-cheating-deep/{sid}`. Combines tab-switch events + audio transcripts + answer text; outputs risk score, multi-voice / gaze-drift / scripted-answer indicators, and recommendations. Shown on Results page.
-- [Feb 14] **Legacy `/api/evaluate-answer` deprecated** — returns HTTP 410 Gone.
-- [Feb 14] **Idempotency guard on batch evaluation** — re-submitting returns `cached=true` from DB without re-calling the LLM. `force=true` bypasses.
-- [Feb 14] **Batch evaluation endpoint** `/api/evaluate-interview-batch` — primary evaluation path.
-- [Feb 14] **Whisper STT endpoint** `/api/transcribe-audio` + "Record Answer" mic in the interview room.
-- [Feb 14] **Cheating-analysis 422 bug fixed** (Pydantic JSON body).
-- [Feb 14] **Dashboard & Results header** redesigned with purple/pink gradient theme.
-- [Feb 14] Removed obsolete `/app/frontend/src/pages/InterviewRoom.jsx`.
+- [Feb 14] **Cheating-warning closure bug fixed** — listeners now bound in a `useEffect` keyed on `session` with `sessionRef`/`warningsRef`/`currentQuestionIndexRef`. Tab-switch / focus-loss now fire as expected; 2-strike cancel verified.
+- [Feb 14] **Evaluating overlay** — full-screen 4-stage checklist (data-testid `evaluating-overlay`) renders between final submit and `/results`.
+- [Feb 14] **Improvement Suggestions section expanded** — moved out of the 2-col grid to a full-width dark-purple Card with stacked numbered items + Pro Tip footer.
+- [Feb 14] **Dashboard history filtering** — only sessions with `answers.length > 0` AND `evaluated_at` are shown; Total Interviews stat matches.
+- [Feb 14] **Video upload + persistence**, **Deep LLM proctoring analysis**, **`/api/evaluate-answer` → 410 Gone**, **idempotency on batch evaluation**, **Whisper STT**, **Cheating-analysis JSON-body fix**, **Dashboard/Results gradient theme**, **legacy InterviewRoom.jsx removed**.
 
 ## Previously implemented (prior forks)
 - Landing page redesign with modern gradient theme.
