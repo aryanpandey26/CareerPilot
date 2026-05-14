@@ -16,11 +16,11 @@ Build an AI-powered mock interview platform with:
 - DB: MongoDB (NOT PostgreSQL — environment mandate)
 
 ## Implemented (Feb 2026 — current fork)
-- [Feb 14] **Cheating-warning closure bug fixed** — listeners now bound in a `useEffect` keyed on `session` with `sessionRef`/`warningsRef`/`currentQuestionIndexRef`. Tab-switch / focus-loss now fire as expected; 2-strike cancel verified.
-- [Feb 14] **Evaluating overlay** — full-screen 4-stage checklist (data-testid `evaluating-overlay`) renders between final submit and `/results`.
-- [Feb 14] **Improvement Suggestions section expanded** — moved out of the 2-col grid to a full-width dark-purple Card with stacked numbered items + Pro Tip footer.
-- [Feb 14] **Dashboard history filtering** — only sessions with `answers.length > 0` AND `evaluated_at` are shown; Total Interviews stat matches.
-- [Feb 14] **Video upload + persistence**, **Deep LLM proctoring analysis**, **`/api/evaluate-answer` → 410 Gone**, **idempotency on batch evaluation**, **Whisper STT**, **Cheating-analysis JSON-body fix**, **Dashboard/Results gradient theme**, **legacy InterviewRoom.jsx removed**.
+- [Feb 14] **Per-user Dashboard history** — session IDs are persisted to `localStorage["interviewSessionIds"]` when interviews are created; Dashboard filters history, Total Interviews, Average Score, and Strong/Weak/Focus sections strictly by those IDs. Fresh browsers correctly show 0% / empty-state CTA.
+- [Feb 14] **Video upload race fix** — `pendingUploadsRef` tracks each upload promise; final submit stops the active recorder, waits for `onstop`, then `Promise.allSettled(...)` before evaluation. Added "Uploading your last video clip..." stage to the evaluating overlay.
+- [Feb 14] **Webcam audio enabled** (`<Webcam audio={true} />`) — recordings now contain voice, enriching deep proctoring analysis.
+- [Feb 14] **Results page dark-theme polish** — Overall Performance, per-question evaluation cards, Recorded Clips, Proctoring Analysis card all switched to `bg-slate-800/60 + text-white/purple-200/slate-300`. Readable on the dark gradient background.
+- [Feb 14] Cheating-warning closure bug fixed, Evaluating overlay between submit and results, Improvement Suggestions expanded, History filtering, Video upload + persistence, Deep LLM proctoring, `/api/evaluate-answer → 410`, batch eval idempotency, Whisper STT, Dashboard/Results gradient theme.
 
 ## Previously implemented (prior forks)
 - Landing page redesign with modern gradient theme.

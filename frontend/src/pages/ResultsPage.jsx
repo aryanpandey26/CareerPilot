@@ -114,22 +114,22 @@ export default function ResultsPage() {
             className="mb-12"
           >
             <Card
-              className={`p-8 border-2 ${
+              className={`p-8 border-2 bg-slate-800/60 backdrop-blur-sm ${
                 deepCheat.risk_level === "high"
-                  ? "border-rose-400 bg-rose-50"
+                  ? "border-rose-400/50"
                   : deepCheat.risk_level === "medium"
-                  ? "border-amber-400 bg-amber-50"
-                  : "border-emerald-400 bg-emerald-50"
+                  ? "border-amber-400/50"
+                  : "border-emerald-400/50"
               }`}
             >
               <div className="flex items-start gap-4">
                 <div
                   className={`shrink-0 p-3 rounded-xl ${
                     deepCheat.risk_level === "high"
-                      ? "bg-rose-100 text-rose-600"
+                      ? "bg-rose-500/15 text-rose-300"
                       : deepCheat.risk_level === "medium"
-                      ? "bg-amber-100 text-amber-600"
-                      : "bg-emerald-100 text-emerald-600"
+                      ? "bg-amber-500/15 text-amber-300"
+                      : "bg-emerald-500/15 text-emerald-300"
                   }`}
                 >
                   {deepCheat.risk_level === "high" ? (
@@ -142,23 +142,23 @@ export default function ResultsPage() {
                 </div>
                 <div className="flex-1">
                   <div className="flex items-center justify-between flex-wrap gap-2">
-                    <h3 className="text-xl font-semibold text-slate-800">
+                    <h3 className="text-xl font-semibold text-white">
                       Proctoring Analysis —{" "}
                       <span className="capitalize">{deepCheat.risk_level}</span> Risk
                     </h3>
-                    <span className="text-2xl font-bold text-slate-800">
+                    <span className="text-2xl font-bold text-white">
                       {deepCheat.risk_score}/100
                     </span>
                   </div>
-                  <p className="text-slate-700 mt-2">{deepCheat.summary}</p>
+                  <p className="text-slate-300 mt-2">{deepCheat.summary}</p>
 
                   <div className="grid md:grid-cols-2 gap-4 mt-5">
                     {deepCheat.multiple_voice_indicators?.length > 0 && (
                       <div>
-                        <p className="text-sm font-semibold text-slate-700 mb-1">
+                        <p className="text-sm font-semibold text-purple-200 mb-1">
                           Multi-voice indicators
                         </p>
-                        <ul className="text-sm text-slate-600 list-disc pl-5 space-y-1">
+                        <ul className="text-sm text-slate-300 list-disc pl-5 space-y-1">
                           {deepCheat.multiple_voice_indicators.map((m, i) => (
                             <li key={i}>{m}</li>
                           ))}
@@ -167,10 +167,10 @@ export default function ResultsPage() {
                     )}
                     {deepCheat.gaze_drift_indicators?.length > 0 && (
                       <div>
-                        <p className="text-sm font-semibold text-slate-700 mb-1">
+                        <p className="text-sm font-semibold text-purple-200 mb-1">
                           Gaze / focus drift
                         </p>
-                        <ul className="text-sm text-slate-600 list-disc pl-5 space-y-1">
+                        <ul className="text-sm text-slate-300 list-disc pl-5 space-y-1">
                           {deepCheat.gaze_drift_indicators.map((m, i) => (
                             <li key={i}>{m}</li>
                           ))}
@@ -179,10 +179,10 @@ export default function ResultsPage() {
                     )}
                     {deepCheat.scripted_answer_indicators?.length > 0 && (
                       <div>
-                        <p className="text-sm font-semibold text-slate-700 mb-1">
+                        <p className="text-sm font-semibold text-purple-200 mb-1">
                           Scripted-answer signals
                         </p>
-                        <ul className="text-sm text-slate-600 list-disc pl-5 space-y-1">
+                        <ul className="text-sm text-slate-300 list-disc pl-5 space-y-1">
                           {deepCheat.scripted_answer_indicators.map((m, i) => (
                             <li key={i}>{m}</li>
                           ))}
@@ -191,10 +191,10 @@ export default function ResultsPage() {
                     )}
                     {deepCheat.transcript_text_mismatch?.length > 0 && (
                       <div>
-                        <p className="text-sm font-semibold text-slate-700 mb-1">
+                        <p className="text-sm font-semibold text-purple-200 mb-1">
                           Transcript / text mismatches
                         </p>
-                        <ul className="text-sm text-slate-600 list-disc pl-5 space-y-1">
+                        <ul className="text-sm text-slate-300 list-disc pl-5 space-y-1">
                           {deepCheat.transcript_text_mismatch.map((m, i) => (
                             <li key={i}>{m}</li>
                           ))}
@@ -204,11 +204,11 @@ export default function ResultsPage() {
                   </div>
 
                   {deepCheat.recommendations?.length > 0 && (
-                    <div className="mt-5 pt-4 border-t border-slate-200">
-                      <p className="text-sm font-semibold text-slate-700 mb-2">
+                    <div className="mt-5 pt-4 border-t border-purple-500/20">
+                      <p className="text-sm font-semibold text-purple-200 mb-2">
                         Recommendations
                       </p>
-                      <ul className="text-sm text-slate-600 list-disc pl-5 space-y-1">
+                      <ul className="text-sm text-slate-300 list-disc pl-5 space-y-1">
                         {deepCheat.recommendations.map((r, i) => (
                           <li key={i}>{r}</li>
                         ))}
