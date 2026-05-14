@@ -1,74 +1,111 @@
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Target, TrendingUp, Award, Brain } from "lucide-react";
+import { ArrowRight, Target, TrendingUp, Award, Brain, Sparkles, Zap, CheckCircle } from "lucide-react";
 
 export default function LandingPage() {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-purple-50 to-pink-50">
       {/* Hero Section */}
-      <section className="relative overflow-hidden bg-gradient-to-r from-slate-900 to-slate-800 py-24 md:py-32">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid md:grid-cols-2 gap-12 items-center">
-            {/* Left: Text Content */}
+      <section className="relative overflow-hidden py-20 md:py-32">
+        {/* Animated Background Elements */}
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute top-20 left-10 w-72 h-72 bg-purple-300 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-blob"></div>
+          <div className="absolute top-40 right-10 w-72 h-72 bg-pink-300 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-blob animation-delay-2000"></div>
+          <div className="absolute -bottom-8 left-1/2 w-72 h-72 bg-blue-300 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-blob animation-delay-4000"></div>
+        </div>
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          <div className="text-center">
+            {/* Badge */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
-              className="text-white z-10"
+              transition={{ duration: 0.5 }}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-white/80 backdrop-blur-sm rounded-full border border-purple-200 shadow-lg mb-8"
             >
-              <h1 className="text-5xl md:text-6xl font-heading font-bold tracking-tight uppercase mb-6">
-                ACE YOUR NEXT
-                <span className="block text-transparent bg-clip-text bg-gradient-to-br from-indigo-400 to-violet-400">
-                  INTERVIEW
-                </span>
-              </h1>
-              <p className="text-lg leading-relaxed text-slate-300 mb-8 max-w-xl">
-                AI-powered mock interviews that analyze your resume, generate personalized questions, and provide real-time feedback to help you land your dream job.
-              </p>
-              <div className="flex gap-4">
-                <Button
-                  data-testid="get-started-btn"
-                  onClick={() => navigate("/analyze")}
-                  className="bg-primary hover:bg-primary/90 text-white font-medium px-8 py-6 rounded-md text-lg shadow-lg hover:shadow-xl active:scale-95 transition-all"
-                >
-                  Get Started
-                  <ArrowRight className="ml-2 h-5 w-5" />
-                </Button>
-                <Button
-                  data-testid="view-dashboard-btn"
-                  onClick={() => navigate("/dashboard")}
-                  variant="outline"
-                  className="border-2 border-white/20 bg-white/10 hover:bg-white/20 text-white font-medium px-8 py-6 rounded-md text-lg backdrop-blur-sm transition-all"
-                >
-                  View Dashboard
-                </Button>
-              </div>
+              <Sparkles className="h-4 w-4 text-purple-600" />
+              <span className="text-sm font-semibold text-purple-900">AI-Powered Interview Mastery</span>
             </motion.div>
 
-            {/* Right: Image */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.6, delay: 0.2 }}
-              className="relative"
+            {/* Main Heading */}
+            <motion.h1
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.1 }}
+              className="text-5xl md:text-7xl font-bold tracking-tight mb-6"
+              style={{ fontFamily: 'Poppins, sans-serif' }}
             >
-              <div className="glass rounded-xl overflow-hidden shadow-2xl">
-                <img
-                  src="https://images.unsplash.com/photo-1765005204058-10418f5123c5?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NTYxODl8MHwxfHNlYXJjaHwxfHxwcm9mZXNzaW9uYWwlMjBqb2IlMjBpbnRlcnZpZXclMjBzdWNjZXNzJTIwY29uZmlkZW50fGVufDB8fHx8MTc3MTU5NzY2NHww&ixlib=rb-4.1.0&q=85"
-                  alt="Professional confident woman ready for interview"
-                  className="w-full h-auto"
-                />
-              </div>
+              <span className="bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 bg-clip-text text-transparent">
+                Ace Every Interview
+              </span>
+              <br />
+              <span className="text-slate-800">With Confidence</span>
+            </motion.h1>
+
+            {/* Subheading */}
+            <motion.p
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+              className="text-xl md:text-2xl text-slate-600 mb-12 max-w-3xl mx-auto leading-relaxed"
+            >
+              Transform your interview skills with AI-powered analysis, personalized questions, and real-time feedback that adapts to your career goals.
+            </motion.p>
+
+            {/* CTA Buttons */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.3 }}
+              className="flex flex-col sm:flex-row gap-4 justify-center items-center"
+            >
+              <Button
+                data-testid="hero-get-started-btn"
+                onClick={() => navigate("/analyze")}
+                className="group bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold px-8 py-6 rounded-full text-lg shadow-xl hover:shadow-2xl transition-all transform hover:scale-105"
+              >
+                Start Free Analysis
+                <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
+              </Button>
+              <Button
+                data-testid="hero-dashboard-btn"
+                onClick={() => navigate("/dashboard")}
+                variant="outline"
+                className="border-2 border-slate-300 bg-white/50 backdrop-blur-sm hover:bg-white text-slate-700 font-semibold px-8 py-6 rounded-full text-lg transition-all"
+              >
+                View Dashboard
+              </Button>
+            </motion.div>
+
+            {/* Stats */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.4 }}
+              className="mt-16 grid grid-cols-3 gap-8 max-w-2xl mx-auto"
+            >
+              {[
+                { number: "95%", label: "Success Rate" },
+                { number: "10K+", label: "Users" },
+                { number: "50K+", label: "Interviews" },
+              ].map((stat, idx) => (
+                <div key={idx} className="text-center">
+                  <div className="text-3xl md:text-4xl font-bold text-purple-600" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                    {stat.number}
+                  </div>
+                  <div className="text-sm text-slate-600 mt-1">{stat.label}</div>
+                </div>
+              ))}
             </motion.div>
           </div>
         </div>
       </section>
 
-      {/* Features Section */}
-      <section className="py-24 bg-background-subtle">
+      {/* Features Section - Bento Grid */}
+      <section className="py-24 bg-white/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -77,40 +114,58 @@ export default function LandingPage() {
             transition={{ duration: 0.6 }}
             className="text-center mb-16"
           >
-            <h2 className="text-3xl md:text-4xl font-heading font-bold tracking-tight uppercase text-secondary mb-4">
-              PERFORMANCE PRO FEATURES
+            <h2 className="text-4xl md:text-5xl font-bold text-slate-800 mb-4" style={{ fontFamily: 'Poppins, sans-serif' }}>
+              Everything You Need to Succeed
             </h2>
             <p className="text-lg text-slate-600 max-w-2xl mx-auto">
-              Our AI-powered platform provides everything you need to excel in your next interview.
+              Our AI-powered platform gives you the tools, insights, and confidence to land your dream job
             </p>
           </motion.div>
 
           {/* Bento Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[
               {
                 icon: <Target className="h-8 w-8" />,
-                title: "ATS Resume Analysis",
-                description: "Get instant compatibility scores and identify skill gaps in your resume.",
-                color: "text-primary"
+                title: "Smart ATS Analysis",
+                description: "Get instant compatibility scores and identify exactly what recruiters are looking for in your resume",
+                color: "from-purple-500 to-purple-600",
+                bgColor: "bg-purple-50",
               },
               {
                 icon: <Brain className="h-8 w-8" />,
-                title: "AI Question Generation",
-                description: "Dynamic questions tailored to your skills and experience level.",
-                color: "text-violet-600"
+                title: "AI-Generated Questions",
+                description: "Practice with tailored questions that match your experience level and target role perfectly",
+                color: "from-pink-500 to-pink-600",
+                bgColor: "bg-pink-50",
+              },
+              {
+                icon: <Zap className="h-8 w-8" />,
+                title: "Real-Time Feedback",
+                description: "Get detailed scoring on accuracy, depth, clarity, and confidence with every answer",
+                color: "from-blue-500 to-blue-600",
+                bgColor: "bg-blue-50",
               },
               {
                 icon: <Award className="h-8 w-8" />,
-                title: "Real-time Evaluation",
-                description: "Detailed scoring on accuracy, depth, clarity, and confidence.",
-                color: "text-accent"
+                title: "Performance Tracking",
+                description: "Track your progress over time and see exactly where you're improving",
+                color: "from-green-500 to-green-600",
+                bgColor: "bg-green-50",
               },
               {
                 icon: <TrendingUp className="h-8 w-8" />,
-                title: "Performance Analytics",
-                description: "Track your progress and identify areas for improvement over time.",
-                color: "text-orange-600"
+                title: "Skill Gap Analysis",
+                description: "Discover missing skills and get personalized recommendations to strengthen your profile",
+                color: "from-orange-500 to-orange-600",
+                bgColor: "bg-orange-50",
+              },
+              {
+                icon: <CheckCircle className="h-8 w-8" />,
+                title: "Interview Ready",
+                description: "Build unshakeable confidence with unlimited practice sessions anytime, anywhere",
+                color: "from-teal-500 to-teal-600",
+                bgColor: "bg-teal-50",
               },
             ].map((feature, idx) => (
               <motion.div
@@ -119,12 +174,12 @@ export default function LandingPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.6, delay: idx * 0.1 }}
-                className="bg-white rounded-lg border border-slate-200 p-8 shadow-sm hover:shadow-md transition-all duration-300"
+                className={`${feature.bgColor} rounded-2xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 border border-slate-200`}
               >
-                <div className={`${feature.color} mb-4`}>
+                <div className={`inline-flex p-3 rounded-xl bg-gradient-to-br ${feature.color} text-white mb-4 shadow-md`}>
                   {feature.icon}
                 </div>
-                <h3 className="text-xl font-semibold text-secondary mb-3">
+                <h3 className="text-xl font-bold text-slate-800 mb-3" style={{ fontFamily: 'Poppins, sans-serif' }}>
                   {feature.title}
                 </h3>
                 <p className="text-slate-600 leading-relaxed">
@@ -136,32 +191,63 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="py-24 bg-secondary text-white">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+      {/* Final CTA Section */}
+      <section className="py-24 bg-gradient-to-br from-purple-600 via-pink-600 to-blue-600 text-white relative overflow-hidden">
+        <div className="absolute inset-0 bg-black/10"></div>
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}
           >
-            <h2 className="text-3xl md:text-4xl font-heading font-bold tracking-tight uppercase mb-6">
-              READY TO LEVEL UP YOUR INTERVIEW SKILLS?
+            <h2 className="text-4xl md:text-5xl font-bold mb-6" style={{ fontFamily: 'Poppins, sans-serif' }}>
+              Ready to Transform Your Career?
             </h2>
-            <p className="text-lg text-slate-300 mb-8">
-              Start your personalized mock interview journey today and gain the confidence to succeed.
+            <p className="text-xl text-white/90 mb-8 leading-relaxed">
+              Join thousands of successful candidates who've landed their dream jobs with our AI-powered interview preparation
             </p>
             <Button
-              data-testid="cta-start-btn"
+              data-testid="cta-final-btn"
               onClick={() => navigate("/analyze")}
-              className="bg-primary hover:bg-primary/90 text-white font-medium px-10 py-6 rounded-md text-lg shadow-lg hover:shadow-xl active:scale-95 transition-all"
+              className="bg-white text-purple-600 hover:bg-slate-100 font-bold px-10 py-6 rounded-full text-lg shadow-2xl hover:shadow-3xl transition-all transform hover:scale-105"
             >
-              Start Your First Interview
+              Start Your Journey Now
               <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
           </motion.div>
         </div>
       </section>
+
+      {/* Add custom animations */}
+      <style>{`
+        @keyframes blob {
+          0%, 100% {
+            transform: translate(0, 0) scale(1);
+          }
+          25% {
+            transform: translate(20px, -50px) scale(1.1);
+          }
+          50% {
+            transform: translate(-20px, 20px) scale(0.9);
+          }
+          75% {
+            transform: translate(50px, 50px) scale(1.05);
+          }
+        }
+        
+        .animate-blob {
+          animation: blob 7s infinite;
+        }
+        
+        .animation-delay-2000 {
+          animation-delay: 2s;
+        }
+        
+        .animation-delay-4000 {
+          animation-delay: 4s;
+        }
+      `}</style>
     </div>
   );
 }
