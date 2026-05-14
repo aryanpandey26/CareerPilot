@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Mic, MicOff, ArrowRight, CheckCircle, Video, AlertTriangle, Eye, EyeOff } from "lucide-react";
+import { Mic, MicOff, ArrowRight, CheckCircle, Video, AlertTriangle, Eye, EyeOff, Loader2, Sparkles, Brain, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import axios from "axios";
 import Webcam from "react-webcam";
@@ -41,6 +41,12 @@ export default function InterviewRoomWithVideo() {
   const recordedChunksRef = useRef([]);
   const faceDetectionIntervalRef = useRef(null);
 
+  // Refs to avoid stale-closure issues in window/document event handlers
+  const sessionRef = useRef(null);
+  const warningsRef = useRef(0);
+  const cheatingCancelledRef = useRef(false);
+  const currentQuestionIndexRef = useRef(0);
+
   // Audio-only recording (for Whisper STT)
   const audioStreamRef = useRef(null);
   const audioRecorderRef = useRef(null);
@@ -48,16 +54,104 @@ export default function InterviewRoomWithVideo() {
   const [isAudioRecording, setIsAudioRecording] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
 
+  // Final-submit overlay
+  const [submitting, setSubmitting] = useState(false);
+  const [submitStage, setSubmitStage] = useState("");
+
   useEffect(() => {
     loadSession();
-    setupCheatingDetection();
-    
     return () => {
       if (faceDetectionIntervalRef.current) {
         clearInterval(faceDetectionIntervalRef.current);
       }
     };
   }, [sessionId]);
+
+  // Mirror state into refs so global listeners always see fresh values
+  useEffect(() => {
+    sessionRef.current = session;
+  }, [session]);
+
+  useEffect(() => {
+    warningsRef.current = cheatingWarnings;
+  }, [cheatingWarnings]);
+
+  useEffect(() => {
+    currentQuestionIndexRef.current = currentQuestionIndex;
+  }, [currentQuestionIndex]);
+
+  // Bind global tab/focus listeners only after the session has loaded
+  useEffect(() => {
+    if (!session) return;
+
+    const triggerWarning = (type, description, suffix) => {
+      if (cheatingCancelledRef.current) return;
+      const newCount = warningsRef.current + 1;
+      warningsRef.current = newCount;
+      setCheatingWarnings(newCount);
+      setCheatingEvents((prev) => [
+        ...prev,
+        {
+          type,
+          description,
+          timestamp: new Date().toISOString(),
+          questionIndex: currentQuestionIndexRef.current,
+        },
+      ]);
+
+      if (newCount >= 2) {
+        cheatingCancelledRef.current = true;
+        setWarningMessage(
+          "Interview Cancelled! You have exceeded the maximum number of warnings (2/2)."
+        );
+        setShowWarningModal(true);
+        setTimeout(() => {
+          toast.error("Interview cancelled due to repeated violations");
+          navigate("/dashboard");
+        }, 2000);
+      } else {
+        setWarningMessage(
+          `Warning ${newCount}/2: ${suffix} One more violation will cancel your interview.`
+        );
+        setShowWarningModal(true);
+      }
+    };
+
+    const onVisibility = () => {
+      if (document.hidden) {
+        triggerWarning(
+          "Tab Switch Detected",
+          "User switched to another tab or window",
+          "Tab Switch Detected! Please stay on this page during the interview."
+        );
+        setIsTabActive(false);
+      } else {
+        setIsTabActive(true);
+      }
+    };
+
+    const onBlur = () => {
+      if (!document.hidden) {
+        triggerWarning(
+          "Window Focus Lost",
+          "User clicked outside the interview window",
+          "Focus Lost! Please keep the interview window active."
+        );
+      }
+    };
+
+    const onFocus = () => setIsTabActive(true);
+
+    document.addEventListener("visibilitychange", onVisibility);
+    window.addEventListener("blur", onBlur);
+    window.addEventListener("focus", onFocus);
+
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("blur", onBlur);
+      window.removeEventListener("focus", onFocus);
+    };
+  }, [session, navigate]);
 
   useEffect(() => {
     if (isCameraOn && webcamRef.current) {
@@ -75,80 +169,6 @@ export default function InterviewRoomWithVideo() {
       toast.error("Failed to load interview session");
       navigate("/setup");
     }
-  };
-
-  const setupCheatingDetection = () => {
-    // Tab visibility detection
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-    window.addEventListener("blur", handleWindowBlur);
-    window.addEventListener("focus", handleWindowFocus);
-    
-    return () => {
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
-      window.removeEventListener("blur", handleWindowBlur);
-      window.removeEventListener("focus", handleWindowFocus);
-    };
-  };
-
-  const handleVisibilityChange = () => {
-    if (document.hidden && session) {
-      const newWarningCount = cheatingWarnings + 1;
-      logCheatingEvent("Tab Switch Detected", "User switched to another tab or window");
-      
-      // Update state immediately
-      setCheatingWarnings(newWarningCount);
-      
-      if (newWarningCount >= 2) {
-        setWarningMessage("Interview Cancelled! You have exceeded the maximum number of warnings (2/2).");
-        setShowWarningModal(true);
-        
-        // Cancel interview after showing final warning
-        setTimeout(() => {
-          toast.error("Interview cancelled due to repeated violations");
-          navigate("/dashboard");
-        }, 2000);
-      } else {
-        setWarningMessage(`Warning ${newWarningCount}/2: Tab Switch Detected! Please stay on this page during the interview. One more violation will cancel your interview.`);
-        setShowWarningModal(true);
-      }
-    }
-    setIsTabActive(!document.hidden);
-  };
-
-  const handleWindowBlur = () => {
-    if (session && !document.hidden) {
-      const newWarningCount = cheatingWarnings + 1;
-      logCheatingEvent("Window Focus Lost", "User clicked outside the interview window");
-      
-      setCheatingWarnings(newWarningCount);
-      
-      if (newWarningCount >= 2) {
-        setWarningMessage("Interview Cancelled! You have exceeded the maximum number of warnings (2/2).");
-        setShowWarningModal(true);
-        
-        setTimeout(() => {
-          toast.error("Interview cancelled due to repeated violations");
-          navigate("/dashboard");
-        }, 2000);
-      } else {
-        setWarningMessage(`Warning ${newWarningCount}/2: Focus Lost! Please keep the interview window active. One more violation will cancel your interview.`);
-        setShowWarningModal(true);
-      }
-    }
-  };
-
-  const handleWindowFocus = () => {
-    setIsTabActive(true);
-  };
-
-  const logCheatingEvent = (type, description) => {
-    const event = {
-      type,
-      description,
-      timestamp: new Date().toISOString(),
-      questionIndex: currentQuestionIndex,
-    };
-    setCheatingEvents(prev => [...prev, event]);
   };
 
   const startVideoRecording = () => {
@@ -312,13 +332,12 @@ export default function InterviewRoomWithVideo() {
   };
 
   const submitInterview = async (finalAnswers) => {
-    toast.info("Submitting interview and evaluating all answers...");
-    
+    setSubmitting(true);
     try {
-      // Use finalAnswers parameter to ensure we have the latest answers
       const answersToSubmit = finalAnswers || answers;
 
-      // Single batched evaluation (no more per-question 404s)
+      // Stage 1: Batch evaluation
+      setSubmitStage("Evaluating your answers with AI...");
       try {
         await axios.post(`${API}/evaluate-interview-batch`, {
           session_id: sessionId,
@@ -332,7 +351,8 @@ export default function InterviewRoomWithVideo() {
         toast.error("Evaluation partially failed, but results saved.");
       }
 
-      // Save cheating analysis
+      // Stage 2: Save tab-switch / focus events
+      setSubmitStage("Saving proctoring data...");
       try {
         await axios.post(`${API}/save-cheating-analysis`, {
           session_id: sessionId,
@@ -344,22 +364,23 @@ export default function InterviewRoomWithVideo() {
         console.error("Error saving cheating analysis:", error);
       }
 
-      // Trigger deep LLM-based cheating analysis (non-blocking; results shown on ResultsPage)
+      // Stage 3: Deep cheating analysis
+      setSubmitStage("Running deep proctoring analysis...");
       try {
-        await axios.post(`${API}/analyze-cheating-deep`, {
-          session_id: sessionId,
-        });
+        await axios.post(`${API}/analyze-cheating-deep`, { session_id: sessionId });
       } catch (error) {
         console.error("Deep cheating analysis failed:", error);
       }
 
-      toast.success("Interview completed! Redirecting to results...");
+      setSubmitStage("All done! Loading your report...");
+      toast.success("Interview completed!");
       setTimeout(() => {
         navigate(`/results/${sessionId}`);
-      }, 1000);
+      }, 800);
     } catch (error) {
       console.error("Error submitting interview:", error);
       toast.error("Failed to submit interview. Please try again.");
+      setSubmitting(false);
     }
   };
 
@@ -367,6 +388,93 @@ export default function InterviewRoomWithVideo() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
         <div className="text-white text-lg">Loading interview...</div>
+      </div>
+    );
+  }
+
+  // Full-screen evaluating overlay shown during final submission
+  if (submitting) {
+    const stages = [
+      { label: "Evaluating your answers with AI...", icon: Brain },
+      { label: "Saving proctoring data...", icon: ShieldCheck },
+      { label: "Running deep proctoring analysis...", icon: Sparkles },
+      { label: "All done! Loading your report...", icon: CheckCircle },
+    ];
+    const activeIdx = Math.max(0, stages.findIndex((s) => s.label === submitStage));
+
+    return (
+      <div
+        data-testid="evaluating-overlay"
+        className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center px-4"
+      >
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl animate-pulse" />
+          <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-pink-500/20 rounded-full blur-3xl animate-pulse" />
+        </div>
+
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5 }}
+          className="relative max-w-lg w-full"
+        >
+          <Card className="bg-slate-900/70 backdrop-blur-xl border-purple-500/30 p-8 sm:p-10 text-center shadow-2xl shadow-purple-500/20">
+            <div className="flex justify-center mb-6">
+              <div className="relative">
+                <Loader2 className="h-16 w-16 text-purple-300 animate-spin" />
+                <Sparkles className="absolute inset-0 m-auto h-8 w-8 text-pink-300 animate-pulse" />
+              </div>
+            </div>
+            <h2 className="text-3xl sm:text-4xl font-bold text-white mb-3">
+              Evaluating your{" "}
+              <span className="bg-gradient-to-r from-purple-300 via-pink-300 to-purple-400 bg-clip-text text-transparent">
+                interview
+              </span>
+            </h2>
+            <p className="text-slate-300 mb-8">
+              Hang tight — our AI is grading every answer and analyzing your session.
+            </p>
+
+            <div className="space-y-3 text-left">
+              {stages.map((s, i) => {
+                const done = i < activeIdx;
+                const active = i === activeIdx;
+                const Icon = s.icon;
+                return (
+                  <div
+                    key={i}
+                    className={`flex items-center gap-3 px-4 py-3 rounded-lg border transition-colors ${
+                      active
+                        ? "bg-purple-500/15 border-purple-400/40"
+                        : done
+                        ? "bg-emerald-500/10 border-emerald-400/30"
+                        : "bg-slate-800/40 border-slate-700/50"
+                    }`}
+                  >
+                    {done ? (
+                      <CheckCircle className="h-5 w-5 text-emerald-300 shrink-0" />
+                    ) : active ? (
+                      <Loader2 className="h-5 w-5 text-purple-300 animate-spin shrink-0" />
+                    ) : (
+                      <Icon className="h-5 w-5 text-slate-500 shrink-0" />
+                    )}
+                    <span
+                      className={`text-sm ${
+                        active
+                          ? "text-white font-medium"
+                          : done
+                          ? "text-emerald-200"
+                          : "text-slate-400"
+                      }`}
+                    >
+                      {s.label}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </Card>
+        </motion.div>
       </div>
     );
   }

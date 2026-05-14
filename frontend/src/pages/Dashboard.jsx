@@ -69,6 +69,9 @@ export default function Dashboard() {
   }
 
   const avgScore = Math.round(analytics?.average_score || 0);
+  const completedHistory = (history || []).filter(
+    (s) => (s.answers || []).length > 0 && s.evaluated_at
+  );
 
   return (
     <div
@@ -171,7 +174,7 @@ export default function Dashboard() {
               <p className="text-xs uppercase tracking-[0.2em] text-slate-400 mb-2">
                 Interviews
               </p>
-              <div className="text-3xl font-bold text-white">{history.length}</div>
+              <div className="text-3xl font-bold text-white">{completedHistory.length}</div>
             </Card>
           </motion.div>
         </div>
@@ -273,68 +276,74 @@ export default function Dashboard() {
               <BarChart3 className="h-6 w-6 text-purple-300" />
               Interview History
             </h2>
-            {history.length > 0 ? (
-              <div className="space-y-4">
-                {history.slice(0, 10).map((session, idx) => {
-                  const answers = session.answers || [];
-                  const avg =
-                    answers.length > 0
-                      ? Math.round(
-                          answers.reduce(
-                            (sum, a) => sum + (a.evaluation?.overall_score || 0),
-                            0
-                          ) / answers.length
-                        )
-                      : 0;
-
-                  return (
-                    <div
-                      key={idx}
-                      data-testid={`history-row-${idx}`}
-                      className="flex items-center justify-between p-4 bg-slate-900/60 border border-purple-500/10 rounded-lg hover:border-purple-400/40 transition-colors cursor-pointer"
-                      onClick={() => navigate(`/results/${session.id}`)}
+            {(() => {
+              const completed = (history || []).filter(
+                (s) => (s.answers || []).length > 0 && s.evaluated_at
+              );
+              if (completed.length === 0) {
+                return (
+                  <div className="text-center py-12">
+                    <Brain className="h-16 w-16 mx-auto text-purple-300/50 mb-4" />
+                    <p className="text-slate-400 mb-4">No completed interviews yet.</p>
+                    <Button
+                      data-testid="start-first-interview-btn"
+                      onClick={() => navigate("/analyze")}
+                      className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
                     >
-                      <div className="flex-1">
-                        <h3 className="font-semibold text-white">
-                          {session.job_title}
-                        </h3>
-                        <p className="text-sm text-slate-400">
-                          {session.experience_level} • {answers.length} questions answered
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <div
-                          className={`text-2xl font-bold bg-gradient-to-r ${getScoreGradient(
-                            avg
-                          )} bg-clip-text text-transparent`}
-                        >
-                          {avg}%
+                      Start Your First Interview
+                    </Button>
+                  </div>
+                );
+              }
+              return (
+                <div className="space-y-4">
+                  {completed.slice(0, 10).map((session, idx) => {
+                    const answers = session.answers || [];
+                    const avg =
+                      answers.length > 0
+                        ? Math.round(
+                            answers.reduce(
+                              (sum, a) => sum + (a.evaluation?.overall_score || 0),
+                              0
+                            ) / answers.length
+                          )
+                        : 0;
+
+                    return (
+                      <div
+                        key={session.id || idx}
+                        data-testid={`history-row-${idx}`}
+                        className="flex items-center justify-between p-4 bg-slate-900/60 border border-purple-500/10 rounded-lg hover:border-purple-400/40 transition-colors cursor-pointer"
+                        onClick={() => navigate(`/results/${session.id}`)}
+                      >
+                        <div className="flex-1">
+                          <h3 className="font-semibold text-white">{session.job_title}</h3>
+                          <p className="text-sm text-slate-400">
+                            {session.experience_level} • {answers.length} questions answered
+                          </p>
                         </div>
-                        <p className="text-xs text-slate-500">
-                          {new Date(session.created_at).toLocaleDateString()}
-                        </p>
+                        <div className="text-right">
+                          <div
+                            className={`text-2xl font-bold bg-gradient-to-r ${getScoreGradient(
+                              avg
+                            )} bg-clip-text text-transparent`}
+                          >
+                            {avg}%
+                          </div>
+                          <p className="text-xs text-slate-500">
+                            {new Date(session.created_at).toLocaleDateString()}
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                  );
-                })}
-              </div>
-            ) : (
-              <div className="text-center py-12">
-                <Brain className="h-16 w-16 mx-auto text-purple-300/50 mb-4" />
-                <p className="text-slate-400 mb-4">No interview history yet.</p>
-                <Button
-                  data-testid="start-first-interview-btn"
-                  onClick={() => navigate("/analyze")}
-                  className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
-                >
-                  Start Your First Interview
-                </Button>
-              </div>
-            )}
+                    );
+                  })}
+                </div>
+              );
+            })()}
           </Card>
         </motion.div>
 
-        {history.length > 0 && (
+        {completedHistory.length > 0 && (
           <div className="mt-8 text-center">
             <Button
               data-testid="new-interview-btn"

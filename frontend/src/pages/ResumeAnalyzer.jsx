@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
-import { Upload, FileText, TrendingUp, CheckCircle2, AlertCircle, ArrowRight } from "lucide-react";
+import { Upload, FileText, TrendingUp, CheckCircle2, AlertCircle, ArrowRight, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import axios from "axios";
 
@@ -328,94 +328,7 @@ Experience:
                       </Card>
                     )}
                   </div>
-
-                  {/* Improvement Suggestions - Exciting Design */}
-                  {result.improvement_suggestions.length > 0 && (
-                    <Card className="p-6 md:p-8 bg-gradient-to-br from-white via-purple-50 to-pink-50 backdrop-blur-sm shadow-2xl border-0 w-full overflow-hidden relative">
-                      {/* Decorative Background Elements */}
-                      <div className="absolute top-0 right-0 w-32 h-32 bg-purple-200 rounded-full blur-3xl opacity-30"></div>
-                      <div className="absolute bottom-0 left-0 w-32 h-32 bg-pink-200 rounded-full blur-3xl opacity-30"></div>
-                      
-                      <div className="relative z-10">
-                        {/* Header */}
-                        <div className="mb-8 text-center">
-                          <div className="inline-flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 rounded-full mb-4 shadow-lg">
-                            <TrendingUp className="h-6 w-6 text-white" />
-                            <h3 className="text-xl font-bold text-white" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                              Boost Your Resume
-                            </h3>
-                          </div>
-                          <p className="text-slate-600 text-sm">Actionable suggestions to increase your ATS score</p>
-                        </div>
-
-                        {/* Suggestions Grid */}
-                        <div className="space-y-4 w-full">
-                          {result.improvement_suggestions.map((suggestion, idx) => {
-                            const colors = [
-                              { bg: 'from-purple-500 to-purple-600', light: 'bg-purple-50', border: 'border-purple-300', icon: '🎯' },
-                              { bg: 'from-blue-500 to-blue-600', light: 'bg-blue-50', border: 'border-blue-300', icon: '💡' },
-                              { bg: 'from-pink-500 to-pink-600', light: 'bg-pink-50', border: 'border-pink-300', icon: '⚡' },
-                              { bg: 'from-green-500 to-green-600', light: 'bg-green-50', border: 'border-green-300', icon: '🚀' },
-                              { bg: 'from-orange-500 to-orange-600', light: 'bg-orange-50', border: 'border-orange-300', icon: '✨' },
-                              { bg: 'from-indigo-500 to-indigo-600', light: 'bg-indigo-50', border: 'border-indigo-300', icon: '🎨' },
-                            ];
-                            const colorScheme = colors[idx % colors.length];
-
-                            return (
-                              <motion.div
-                                key={idx}
-                                initial={{ opacity: 0, x: -20 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                transition={{ duration: 0.4, delay: idx * 0.1 }}
-                                className={`group flex items-start gap-4 p-5 ${colorScheme.light} rounded-2xl border-2 ${colorScheme.border} hover:shadow-xl transition-all duration-300 hover:-translate-y-1 cursor-pointer w-full`}
-                              >
-                                {/* Number Badge */}
-                                <div className={`flex-shrink-0 w-12 h-12 bg-gradient-to-br ${colorScheme.bg} rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-lg group-hover:scale-110 transition-transform`} style={{ fontFamily: 'Poppins, sans-serif' }}>
-                                  {idx + 1}
-                                </div>
-                                
-                                {/* Content */}
-                                <div className="flex-1 pt-1">
-                                  <p className="text-slate-800 text-base leading-relaxed font-medium">
-                                    {suggestion}
-                                  </p>
-                                </div>
-
-                                {/* Icon Badge */}
-                                <div className="flex-shrink-0 text-2xl opacity-70 group-hover:opacity-100 group-hover:scale-125 transition-all">
-                                  {colorScheme.icon}
-                                </div>
-                              </motion.div>
-                            );
-                          })}
-                        </div>
-
-                        {/* Bottom CTA */}
-                        <div className="mt-8 p-5 bg-gradient-to-r from-purple-100 to-pink-100 rounded-2xl border-2 border-purple-200">
-                          <div className="flex items-start gap-3">
-                            <span className="text-2xl">💪</span>
-                            <div>
-                              <p className="text-sm font-bold text-purple-900 mb-1">Pro Tip</p>
-                              <p className="text-sm text-slate-700">
-                                Implementing these suggestions can increase your ATS score by <span className="font-bold text-purple-600">15-25%</span> and significantly improve your chances of getting an interview call!
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </Card>
-                  )}
                 </div>
-
-                {/* Next Step */}
-                <Button
-                  data-testid="proceed-to-interview-btn"
-                  onClick={() => navigate("/setup", { state: { analysisResult: result } })}
-                  className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold py-6 rounded-xl text-lg shadow-lg hover:shadow-xl transition-all transform hover:scale-[1.02]"
-                >
-                  Proceed to Interview Setup
-                  <ArrowRight className="ml-2 h-5 w-5" />
-                </Button>
               </div>
             ) : (
               <Card className="p-12 text-center bg-white/80 backdrop-blur-sm shadow-xl border-0">
@@ -434,6 +347,88 @@ Experience:
             )}
           </motion.div>
         </div>
+
+        {/* Improvement Suggestions — full-width, expanded layout */}
+        {result && result.improvement_suggestions?.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+            className="mt-10 w-full"
+          >
+            <Card
+              data-testid="improvement-suggestions"
+              className="p-8 md:p-12 bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 border border-purple-500/30 shadow-2xl shadow-purple-500/20 w-full overflow-hidden relative"
+            >
+              <div className="absolute top-0 right-0 w-64 h-64 bg-purple-500/20 rounded-full blur-3xl pointer-events-none" />
+              <div className="absolute bottom-0 left-0 w-64 h-64 bg-pink-500/20 rounded-full blur-3xl pointer-events-none" />
+
+              <div className="relative z-10">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="p-3 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl shadow-lg">
+                    <TrendingUp className="h-6 w-6 text-white" />
+                  </div>
+                  <h3
+                    className="text-3xl sm:text-4xl font-bold text-white"
+                    style={{ fontFamily: 'Poppins, sans-serif' }}
+                  >
+                    Improvement Suggestions
+                  </h3>
+                </div>
+                <p className="text-slate-300 text-base mb-8 max-w-2xl">
+                  Actionable, high-impact changes to lift your ATS match score and land more interviews.
+                </p>
+
+                <div className="space-y-4 w-full">
+                  {result.improvement_suggestions.map((suggestion, idx) => (
+                    <motion.div
+                      key={idx}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ duration: 0.4, delay: idx * 0.08 }}
+                      className="group relative flex items-start gap-5 px-6 py-5 sm:px-8 sm:py-6 rounded-2xl border border-purple-400/30 bg-gradient-to-r from-purple-500/10 via-purple-500/5 to-pink-500/10 hover:from-purple-500/20 hover:to-pink-500/20 hover:border-purple-300/50 transition-all duration-300 w-full"
+                    >
+                      <div
+                        className="flex-shrink-0 w-11 h-11 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center text-white font-bold text-base shadow-lg group-hover:scale-110 transition-transform"
+                        style={{ fontFamily: 'Poppins, sans-serif' }}
+                      >
+                        {idx + 1}
+                      </div>
+                      <p className="text-slate-100 text-base sm:text-lg leading-relaxed flex-1 pt-1">
+                        {suggestion}
+                      </p>
+                    </motion.div>
+                  ))}
+                </div>
+
+                <div className="mt-8 px-6 py-5 rounded-2xl border border-purple-400/30 bg-gradient-to-r from-purple-500/15 to-pink-500/15">
+                  <div className="flex items-start gap-4">
+                    <Sparkles className="h-6 w-6 text-pink-300 shrink-0 mt-1" />
+                    <div>
+                      <p className="text-sm font-bold text-pink-200 mb-1 uppercase tracking-wider">
+                        Pro Tip
+                      </p>
+                      <p className="text-slate-200 text-sm sm:text-base">
+                        Applying these changes can raise your ATS score by{" "}
+                        <span className="font-bold text-pink-300">15–25%</span>{" "}
+                        and noticeably improve callback rates.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <Button
+                  data-testid="proceed-to-interview-btn"
+                  onClick={() => navigate("/setup", { state: { analysisResult: result } })}
+                  className="mt-8 w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold py-6 rounded-xl text-lg shadow-lg hover:shadow-xl transition-all transform hover:scale-[1.01]"
+                >
+                  Proceed to Interview Setup
+                  <ArrowRight className="ml-2 h-5 w-5" />
+                </Button>
+              </div>
+            </Card>
+          </motion.div>
+        )}
       </div>
     </div>
   );
