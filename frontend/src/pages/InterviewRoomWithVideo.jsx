@@ -58,6 +58,9 @@ export default function InterviewRoomWithVideo() {
   const [submitting, setSubmitting] = useState(false);
   const [submitStage, setSubmitStage] = useState("");
 
+  // Track in-flight video uploads so we can await them before navigating
+  const pendingUploadsRef = useRef([]);
+
   useEffect(() => {
     loadSession();
     return () => {
@@ -203,8 +206,8 @@ export default function InterviewRoomWithVideo() {
             }
           ]);
 
-          // Fire-and-forget upload to backend
-          (async () => {
+          // Track upload promise so we can await it before final navigate
+          const uploadPromise = (async () => {
             try {
               const fd = new FormData();
               fd.append("video", blob, `q${recIdx}.webm`);
@@ -212,12 +215,13 @@ export default function InterviewRoomWithVideo() {
               fd.append("question_index", String(recIdx));
               await axios.post(`${API}/upload-video`, fd, {
                 headers: { "Content-Type": "multipart/form-data" },
-                timeout: 60000,
+                timeout: 120000,
               });
             } catch (err) {
               console.error("Video upload failed:", err);
             }
           })();
+          pendingUploadsRef.current.push(uploadPromise);
         };
 
         mediaRecorder.start();
@@ -336,6 +340,19 @@ export default function InterviewRoomWithVideo() {
     try {
       const answersToSubmit = finalAnswers || answers;
 
+      // Stage 0: Make sure the last video clip has been recorded & uploaded
+      setSubmitStage("Uploading your last video clip...");
+      // Stop any in-progress recording so its onstop fires & pushes an upload promise
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
+        mediaRecorderRef.current.stop();
+      }
+      // Give the onstop event one tick to register its upload promise
+      await new Promise((r) => setTimeout(r, 200));
+      if (pendingUploadsRef.current.length > 0) {
+        await Promise.allSettled(pendingUploadsRef.current);
+        pendingUploadsRef.current = [];
+      }
+
       // Stage 1: Batch evaluation
       setSubmitStage("Evaluating your answers with AI...");
       try {
@@ -395,6 +412,7 @@ export default function InterviewRoomWithVideo() {
   // Full-screen evaluating overlay shown during final submission
   if (submitting) {
     const stages = [
+      { label: "Uploading your last video clip...", icon: Video },
       { label: "Evaluating your answers with AI...", icon: Brain },
       { label: "Saving proctoring data...", icon: ShieldCheck },
       { label: "Running deep proctoring analysis...", icon: Sparkles },
@@ -601,7 +619,7 @@ export default function InterviewRoomWithVideo() {
                 <div className="aspect-video bg-slate-900 rounded-lg overflow-hidden border border-purple-500/30">
                   <Webcam
                     ref={webcamRef}
-                    audio={false}
+                    audio={true}
                     mirrored
                     className="w-full h-full object-cover"
                   />

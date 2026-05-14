@@ -68,9 +68,34 @@ export default function Dashboard() {
     );
   }
 
-  const avgScore = Math.round(analytics?.average_score || 0);
+  const avgScore = (() => {
+    // Compute from user's own completed sessions
+    let scores = [];
+    try {
+      const ids = JSON.parse(localStorage.getItem("interviewSessionIds") || "[]");
+      for (const s of history || []) {
+        if (!ids.includes(s.id)) continue;
+        for (const a of s.answers || []) {
+          if (typeof a?.evaluation?.overall_score === "number") {
+            scores.push(a.evaluation.overall_score);
+          }
+        }
+      }
+    } catch (e) {}
+    if (scores.length === 0) return 0;
+    return Math.round(scores.reduce((s, x) => s + x, 0) / scores.length);
+  })();
+  let mySessionIds = [];
+  try {
+    mySessionIds = JSON.parse(localStorage.getItem("interviewSessionIds") || "[]");
+  } catch (e) {
+    mySessionIds = [];
+  }
   const completedHistory = (history || []).filter(
-    (s) => (s.answers || []).length > 0 && s.evaluated_at
+    (s) =>
+      mySessionIds.includes(s.id) &&
+      (s.answers || []).length > 0 &&
+      s.evaluated_at
   );
 
   return (
@@ -179,7 +204,8 @@ export default function Dashboard() {
           </motion.div>
         </div>
 
-        {/* Strong & Weak */}
+        {/* Strong & Weak (only after user has completed at least one interview) */}
+        {completedHistory.length > 0 && (
         <div className="grid md:grid-cols-2 gap-6 mb-12">
           <motion.div
             initial={{ opacity: 0, x: -20 }}
@@ -237,9 +263,10 @@ export default function Dashboard() {
             </Card>
           </motion.div>
         </div>
+        )}
 
         {/* Recommended Focus */}
-        {analytics?.recommended_focus_topics && analytics.recommended_focus_topics.length > 0 && (
+        {completedHistory.length > 0 && analytics?.recommended_focus_topics && analytics.recommended_focus_topics.length > 0 && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}

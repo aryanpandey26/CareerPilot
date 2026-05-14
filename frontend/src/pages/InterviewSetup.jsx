@@ -51,6 +51,18 @@ export default function InterviewSetup() {
         questions: questionsResponse.data,
       });
 
+      // Remember this session belongs to the current browser/user
+      try {
+        const key = "interviewSessionIds";
+        const existing = JSON.parse(localStorage.getItem(key) || "[]");
+        if (!existing.includes(sessionResponse.data.id)) {
+          existing.push(sessionResponse.data.id);
+          localStorage.setItem(key, JSON.stringify(existing));
+        }
+      } catch (e) {
+        console.warn("Could not persist session id to localStorage", e);
+      }
+
       toast.success("Interview session created!");
       navigate(`/interview/${sessionResponse.data.id}`);
     } catch (error) {
