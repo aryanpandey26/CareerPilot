@@ -91,14 +91,14 @@ export default function ResultsPage() {
           transition={{ duration: 0.6 }}
           className="mb-12"
         >
-          <Card className="p-12 text-center">
-            <p className="text-sm font-medium text-slate-600 uppercase tracking-wider mb-2">
+          <Card className="p-12 text-center bg-slate-800/60 backdrop-blur-sm border-purple-500/20 text-white">
+            <p className="text-sm font-medium text-purple-200 uppercase tracking-wider mb-2">
               Overall Performance
             </p>
             <div className={`text-7xl font-heading font-bold ${getScoreColor(averageScore)} mb-4`}>
               {Math.round(averageScore)}%
             </div>
-            <p className="text-slate-600">
+            <p className="text-slate-300">
               Based on {answers.length} questions answered
             </p>
           </Card>
@@ -230,20 +230,20 @@ export default function ResultsPage() {
             transition={{ duration: 0.6 }}
             className="mb-12"
           >
-            <Card className="p-8">
-              <h3 className="text-xl font-semibold text-slate-800 mb-4">
+            <Card className="p-8 bg-slate-800/60 backdrop-blur-sm border-purple-500/20 text-white">
+              <h3 className="text-xl font-semibold mb-4">
                 Recorded Clips ({videos.length})
               </h3>
               <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {videos.map((v) => (
-                  <div key={v.id} className="rounded-lg overflow-hidden border border-slate-200 bg-slate-50">
+                  <div key={v.id} className="rounded-lg overflow-hidden border border-purple-500/20 bg-slate-900/60">
                     <video
                       controls
                       preload="metadata"
                       className="w-full aspect-video bg-black"
                       src={`${BACKEND_URL}${v.url_path}`}
                     />
-                    <div className="p-3 text-xs text-slate-600 flex items-center justify-between">
+                    <div className="p-3 text-xs text-slate-300 flex items-center justify-between">
                       <span>Question {v.question_index + 1}</span>
                       <span>{(v.size_bytes / 1024).toFixed(1)} KB</span>
                     </div>
@@ -265,9 +265,9 @@ export default function ResultsPage() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: idx * 0.1 }}
               >
-                <Card className="p-6">
+                <Card className="p-6 bg-slate-800/60 backdrop-blur-sm border-purple-500/20 text-white">
                   <div className="flex items-start justify-between mb-4">
-                    <h3 className="text-lg font-semibold text-secondary flex-1">
+                    <h3 className="text-lg font-semibold text-white flex-1">
                       Question {answer.question_index + 1}
                     </h3>
                     <div className={`text-2xl font-bold ${getScoreColor(evaluation.overall_score || 0)}`}>
@@ -278,51 +278,51 @@ export default function ResultsPage() {
                   {/* Scoring Breakdown */}
                   <div className="grid grid-cols-2 gap-4 mb-4">
                     <div>
-                      <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Technical</p>
+                      <p className="text-xs text-slate-400 uppercase tracking-wider mb-1">Technical</p>
                       <div className="flex items-center">
-                        <div className="flex-1 bg-slate-200 rounded-full h-2 mr-2">
+                        <div className="flex-1 bg-slate-700/60 rounded-full h-2 mr-2">
                           <div
-                            className="bg-primary h-2 rounded-full transition-all"
+                            className="bg-purple-500 h-2 rounded-full transition-all"
                             style={{ width: `${(evaluation.technical_accuracy || 0) * 10}%` }}
                           />
                         </div>
-                        <span className="text-sm font-medium">{evaluation.technical_accuracy || 0}/10</span>
+                        <span className="text-sm font-medium text-slate-200">{evaluation.technical_accuracy || 0}/10</span>
                       </div>
                     </div>
                     <div>
-                      <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Depth</p>
+                      <p className="text-xs text-slate-400 uppercase tracking-wider mb-1">Depth</p>
                       <div className="flex items-center">
-                        <div className="flex-1 bg-slate-200 rounded-full h-2 mr-2">
+                        <div className="flex-1 bg-slate-700/60 rounded-full h-2 mr-2">
                           <div
-                            className="bg-violet-600 h-2 rounded-full transition-all"
+                            className="bg-violet-500 h-2 rounded-full transition-all"
                             style={{ width: `${(evaluation.depth || 0) * 10}%` }}
                           />
                         </div>
-                        <span className="text-sm font-medium">{evaluation.depth || 0}/10</span>
+                        <span className="text-sm font-medium text-slate-200">{evaluation.depth || 0}/10</span>
                       </div>
                     </div>
                     <div>
-                      <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Clarity</p>
+                      <p className="text-xs text-slate-400 uppercase tracking-wider mb-1">Clarity</p>
                       <div className="flex items-center">
-                        <div className="flex-1 bg-slate-200 rounded-full h-2 mr-2">
+                        <div className="flex-1 bg-slate-700/60 rounded-full h-2 mr-2">
                           <div
-                            className="bg-accent h-2 rounded-full transition-all"
+                            className="bg-emerald-400 h-2 rounded-full transition-all"
                             style={{ width: `${(evaluation.clarity || 0) * 10}%` }}
                           />
                         </div>
-                        <span className="text-sm font-medium">{evaluation.clarity || 0}/10</span>
+                        <span className="text-sm font-medium text-slate-200">{evaluation.clarity || 0}/10</span>
                       </div>
                     </div>
                     <div>
-                      <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Confidence</p>
+                      <p className="text-xs text-slate-400 uppercase tracking-wider mb-1">Confidence</p>
                       <div className="flex items-center">
-                        <div className="flex-1 bg-slate-200 rounded-full h-2 mr-2">
+                        <div className="flex-1 bg-slate-700/60 rounded-full h-2 mr-2">
                           <div
-                            className="bg-orange-500 h-2 rounded-full transition-all"
+                            className="bg-orange-400 h-2 rounded-full transition-all"
                             style={{ width: `${(evaluation.confidence || 0) * 10}%` }}
                           />
                         </div>
-                        <span className="text-sm font-medium">{evaluation.confidence || 0}/10</span>
+                        <span className="text-sm font-medium text-slate-200">{evaluation.confidence || 0}/10</span>
                       </div>
                     </div>
                   </div>
@@ -330,11 +330,11 @@ export default function ResultsPage() {
                   {/* Strengths & Weaknesses */}
                   {evaluation.strengths && evaluation.strengths.length > 0 && (
                     <div className="mb-3">
-                      <p className="text-sm font-semibold text-accent mb-1">Strengths:</p>
-                      <ul className="text-sm text-slate-600 space-y-1">
+                      <p className="text-sm font-semibold text-emerald-300 mb-1">Strengths:</p>
+                      <ul className="text-sm text-slate-300 space-y-1">
                         {evaluation.strengths.map((s, i) => (
                           <li key={i} className="flex items-start gap-1">
-                            <span className="text-accent">✓</span>
+                            <span className="text-emerald-300">✓</span>
                             <span>{s}</span>
                           </li>
                         ))}
@@ -344,11 +344,11 @@ export default function ResultsPage() {
 
                   {evaluation.weaknesses && evaluation.weaknesses.length > 0 && (
                     <div className="mb-3">
-                      <p className="text-sm font-semibold text-destructive mb-1">Areas to Improve:</p>
-                      <ul className="text-sm text-slate-600 space-y-1">
+                      <p className="text-sm font-semibold text-rose-300 mb-1">Areas to Improve:</p>
+                      <ul className="text-sm text-slate-300 space-y-1">
                         {evaluation.weaknesses.map((w, i) => (
                           <li key={i} className="flex items-start gap-1">
-                            <span className="text-destructive">•</span>
+                            <span className="text-rose-300">•</span>
                             <span>{w}</span>
                           </li>
                         ))}
@@ -358,9 +358,9 @@ export default function ResultsPage() {
 
                   {/* Model Answer */}
                   {evaluation.model_answer && (
-                    <div className="bg-slate-50 rounded-lg p-4 mt-4">
-                      <p className="text-sm font-semibold text-slate-700 mb-2">Model Answer:</p>
-                      <p className="text-sm text-slate-600">{evaluation.model_answer}</p>
+                    <div className="bg-slate-900/60 rounded-lg p-4 mt-4 border border-purple-500/10">
+                      <p className="text-sm font-semibold text-purple-200 mb-2">Model Answer:</p>
+                      <p className="text-sm text-slate-300">{evaluation.model_answer}</p>
                     </div>
                   )}
                 </Card>
@@ -375,7 +375,7 @@ export default function ResultsPage() {
             data-testid="home-btn"
             onClick={() => navigate("/")}
             variant="outline"
-            className="px-8 py-6 text-lg"
+            className="px-8 py-6 text-lg bg-slate-800/60 border-purple-500/30 text-white hover:bg-slate-700"
           >
             <Home className="mr-2 h-5 w-5" />
             Go Home
@@ -383,7 +383,7 @@ export default function ResultsPage() {
           <Button
             data-testid="dashboard-btn"
             onClick={() => navigate("/dashboard")}
-            className="bg-primary hover:bg-primary/90 text-white px-8 py-6 text-lg"
+            className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-8 py-6 text-lg shadow-lg"
           >
             <BarChart3 className="mr-2 h-5 w-5" />
             View Analytics
@@ -391,7 +391,7 @@ export default function ResultsPage() {
           <Button
             data-testid="new-interview-btn"
             onClick={() => navigate("/analyze")}
-            className="bg-accent hover:bg-accent/90 text-white px-8 py-6 text-lg"
+            className="bg-emerald-600 hover:bg-emerald-700 text-white px-8 py-6 text-lg shadow-lg"
           >
             <TrendingUp className="mr-2 h-5 w-5" />
             Start New Interview

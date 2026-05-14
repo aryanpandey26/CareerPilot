@@ -304,9 +304,7 @@ export default function Dashboard() {
               Interview History
             </h2>
             {(() => {
-              const completed = (history || []).filter(
-                (s) => (s.answers || []).length > 0 && s.evaluated_at
-              );
+              const completed = completedHistory;
               if (completed.length === 0) {
                 return (
                   <div className="text-center py-12">
