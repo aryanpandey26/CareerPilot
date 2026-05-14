@@ -533,6 +533,45 @@ async def get_interview_history():
     sessions = await db.interview_sessions.find({}, {"_id": 0}).to_list(100)
     return sessions
 
+@api_router.post("/save-cheating-analysis")
+async def save_cheating_analysis(
+    session_id: str,
+    cheating_events: List[Dict[str, Any]],
+    total_warnings: int,
+    video_count: int
+):
+    """Save cheating detection analysis"""
+    try:
+        analysis = {
+            "session_id": session_id,
+            "cheating_events": cheating_events,
+            "total_warnings": total_warnings,
+            "video_count": video_count,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "risk_level": "high" if total_warnings >= 2 else "medium" if total_warnings == 1 else "low"
+        }
+        
+        await db.cheating_analyses.insert_one(analysis)
+        
+        # Update session with cheating flag
+        await db.interview_sessions.update_one(
+            {"id": session_id},
+            {"$set": {"has_cheating_concerns": total_warnings > 0, "cheating_warnings": total_warnings}}
+        )
+        
+        return {"success": True, "analysis": analysis}
+    except Exception as e:
+        logging.error(f"Error saving cheating analysis: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/cheating-analysis/{session_id}")
+async def get_cheating_analysis(session_id: str):
+    """Get cheating analysis for a session"""
+    analysis = await db.cheating_analyses.find_one({"session_id": session_id}, {"_id": 0})
+    if not analysis:
+        return {"session_id": session_id, "cheating_events": [], "total_warnings": 0, "risk_level": "low"}
+    return analysis
+
 # Include the router in the main app
 app.include_router(api_router)
 
