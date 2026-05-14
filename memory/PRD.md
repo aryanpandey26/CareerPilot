@@ -16,12 +16,15 @@ Build an AI-powered mock interview platform with:
 - DB: MongoDB (NOT PostgreSQL — environment mandate)
 
 ## Implemented (Feb 2026 — current fork)
-- [Feb 14] **Batch evaluation endpoint** `/api/evaluate-interview-batch` — replaces per-question `/api/evaluate-answer` calls. Eliminates recurring 404 cascade.
-- [Feb 14] **Whisper STT endpoint** `/api/transcribe-audio` (multipart upload, webm/mp3/wav/m4a). Frontend mic button "Record Answer" appends transcript to answer textarea.
-- [Feb 14] **Cheating-analysis endpoint fix** — `/api/save-cheating-analysis` now accepts Pydantic JSON body (was form-style, causing 422).
-- [Feb 14] **Dashboard purple/pink gradient redesign** to match Landing / Resume Analyzer / Interview Room.
-- [Feb 14] **Results page header** aligned with gradient theme.
-- [Feb 14] Removed obsolete `/app/frontend/src/pages/InterviewRoom.jsx` (replaced by `InterviewRoomWithVideo.jsx`).
+- [Feb 14] **Video upload + persistence** — `POST /api/upload-video`, `GET /api/interview-videos/{sid}`, static mount at `/api/videos`. Frontend auto-uploads each recorded clip on `mediaRecorder.onstop`.
+- [Feb 14] **Deep LLM cheating analysis** — `POST /api/analyze-cheating-deep` + `GET /api/analyze-cheating-deep/{sid}`. Combines tab-switch events + audio transcripts + answer text; outputs risk score, multi-voice / gaze-drift / scripted-answer indicators, and recommendations. Shown on Results page.
+- [Feb 14] **Legacy `/api/evaluate-answer` deprecated** — returns HTTP 410 Gone.
+- [Feb 14] **Idempotency guard on batch evaluation** — re-submitting returns `cached=true` from DB without re-calling the LLM. `force=true` bypasses.
+- [Feb 14] **Batch evaluation endpoint** `/api/evaluate-interview-batch` — primary evaluation path.
+- [Feb 14] **Whisper STT endpoint** `/api/transcribe-audio` + "Record Answer" mic in the interview room.
+- [Feb 14] **Cheating-analysis 422 bug fixed** (Pydantic JSON body).
+- [Feb 14] **Dashboard & Results header** redesigned with purple/pink gradient theme.
+- [Feb 14] Removed obsolete `/app/frontend/src/pages/InterviewRoom.jsx`.
 
 ## Previously implemented (prior forks)
 - Landing page redesign with modern gradient theme.
@@ -47,11 +50,12 @@ Build an AI-powered mock interview platform with:
 - `audio_transcripts` { id, session_id, question_index, transcript, timestamp }
 
 ## Roadmap / Backlog
-- **P2** — LLM-driven deeper cheating analysis (facial focus, multiple voices) beyond tab-switching.
-- **P2** — Upload + store video blobs to backend (currently only kept client-side as object URLs).
-- **P3** — Deprecate or remove legacy `/api/evaluate-answer` endpoint.
-- **P3** — Add idempotency guard so re-submitting an interview does not wipe prior answers.
-- **P3** — Use functional `setCheatingWarnings(prev => …)` to avoid stale-closure double-warns.
+- **P2** — Hash-based idempotency for batch eval (currently uses answer count; same count + different text returns cached).
+- **P2** — Signed URLs / session-ownership check for `/api/videos/*` (currently public if you know sid+vid).
+- **P2** — Run `analyze-cheating-deep` as a background task with polling, to avoid blocking the final-submit chain.
+- **P3** — More forgiving JSON parser for LLM outputs (regex-extract first `{…}` block).
+- **P3** — Split `server.py` (~895 lines) into routers: sessions / evaluation / proctoring / media.
+- **P3** — Move `/app/backend/uploads/videos` to a persistent volume or object storage for production.
 
 ## Test Status
 - Backend: 100% (8/8) — pytest at `/app/backend/tests/test_interview_engine.py`
