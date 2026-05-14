@@ -6,7 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Briefcase, GraduationCap } from "lucide-react";
+import { Briefcase, GraduationCap, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import axios from "axios";
 
@@ -62,16 +62,29 @@ export default function InterviewSetup() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-purple-50 to-pink-50">
       {/* Header */}
-      <div className="bg-secondary text-white py-8">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h1 className="text-3xl md:text-4xl font-heading font-bold tracking-tight uppercase">
-            INTERVIEW SETUP
-          </h1>
-          <p className="text-slate-300 mt-2">
-            Customize your mock interview experience
-          </p>
+      <div className="bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 text-white py-16 relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-0 left-0 w-64 h-64 bg-white/10 rounded-full blur-3xl"></div>
+        
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+          >
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/20 backdrop-blur-sm rounded-full mb-4">
+              <Sparkles className="h-4 w-4" />
+              <span className="text-sm font-semibold">Personalized Interview</span>
+            </div>
+            <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-3" style={{ fontFamily: 'Poppins, sans-serif' }}>
+              Interview Setup
+            </h1>
+            <p className="text-xl text-white/90">
+              Customize your mock interview experience
+            </p>
+          </motion.div>
         </div>
       </div>
 
@@ -81,9 +94,9 @@ export default function InterviewSetup() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
         >
-          <Card className="p-8">
+          <Card className="p-8 bg-white/80 backdrop-blur-sm shadow-xl border-0">
             <div className="mb-8">
-              <h2 className="text-2xl font-semibold text-secondary mb-2">
+              <h2 className="text-2xl font-bold text-slate-800 mb-2" style={{ fontFamily: 'Poppins, sans-serif' }}>
                 Tell us about the role
               </h2>
               <p className="text-slate-600">
@@ -94,8 +107,10 @@ export default function InterviewSetup() {
             <div className="space-y-6">
               {/* Job Title */}
               <div>
-                <Label htmlFor="job-title" className="text-slate-700 font-medium mb-2 flex items-center gap-2">
-                  <Briefcase className="h-4 w-4" />
+                <Label htmlFor="job-title" className="text-slate-700 font-semibold mb-3 flex items-center gap-2">
+                  <div className="p-2 bg-purple-100 rounded-lg">
+                    <Briefcase className="h-4 w-4 text-purple-600" />
+                  </div>
                   Job Title
                 </Label>
                 <Input
@@ -104,18 +119,20 @@ export default function InterviewSetup() {
                   placeholder="e.g., Senior Software Engineer"
                   value={jobTitle}
                   onChange={(e) => setJobTitle(e.target.value)}
-                  className="mt-2"
+                  className="mt-2 border-2 border-slate-200 focus:border-purple-400 rounded-xl py-6 text-base"
                 />
               </div>
 
               {/* Experience Level */}
               <div>
-                <Label htmlFor="experience" className="text-slate-700 font-medium mb-2 flex items-center gap-2">
-                  <GraduationCap className="h-4 w-4" />
+                <Label htmlFor="experience" className="text-slate-700 font-semibold mb-3 flex items-center gap-2">
+                  <div className="p-2 bg-pink-100 rounded-lg">
+                    <GraduationCap className="h-4 w-4 text-pink-600" />
+                  </div>
                   Experience Level
                 </Label>
                 <Select value={experienceLevel} onValueChange={setExperienceLevel}>
-                  <SelectTrigger data-testid="experience-level-select" className="mt-2">
+                  <SelectTrigger data-testid="experience-level-select" className="mt-2 border-2 border-slate-200 focus:border-purple-400 rounded-xl py-6 text-base">
                     <SelectValue placeholder="Select your experience level" />
                   </SelectTrigger>
                   <SelectContent>
@@ -128,22 +145,22 @@ export default function InterviewSetup() {
 
               {/* ATS Summary */}
               {analysisResult && (
-                <div className="bg-slate-50 rounded-lg p-6 border border-slate-200">
-                  <h3 className="font-semibold text-secondary mb-3">
+                <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-6 border-2 border-purple-200">
+                  <h3 className="font-bold text-slate-800 mb-4" style={{ fontFamily: 'Poppins, sans-serif' }}>
                     Your Resume Analysis Summary
                   </h3>
                   <div className="grid grid-cols-3 gap-4 text-center">
                     <div>
-                      <p className="text-2xl font-bold text-primary">{analysisResult.ats_score}%</p>
-                      <p className="text-sm text-slate-600">ATS Score</p>
+                      <p className="text-3xl font-bold text-purple-600" style={{ fontFamily: 'Poppins, sans-serif' }}>{analysisResult.ats_score}%</p>
+                      <p className="text-sm text-slate-600 mt-1">ATS Score</p>
                     </div>
                     <div>
-                      <p className="text-2xl font-bold text-accent">{analysisResult.matching_skills?.length || 0}</p>
-                      <p className="text-sm text-slate-600">Matching Skills</p>
+                      <p className="text-3xl font-bold text-green-600" style={{ fontFamily: 'Poppins, sans-serif' }}>{analysisResult.matching_skills?.length || 0}</p>
+                      <p className="text-sm text-slate-600 mt-1">Matching Skills</p>
                     </div>
                     <div>
-                      <p className="text-2xl font-bold text-destructive">{analysisResult.missing_skills?.length || 0}</p>
-                      <p className="text-sm text-slate-600">Missing Skills</p>
+                      <p className="text-3xl font-bold text-red-600" style={{ fontFamily: 'Poppins, sans-serif' }}>{analysisResult.missing_skills?.length || 0}</p>
+                      <p className="text-sm text-slate-600 mt-1">Missing Skills</p>
                     </div>
                   </div>
                 </div>
@@ -155,7 +172,7 @@ export default function InterviewSetup() {
                 data-testid="back-btn"
                 onClick={() => navigate("/analyze")}
                 variant="outline"
-                className="flex-1 py-6 text-lg"
+                className="flex-1 py-6 text-lg border-2 rounded-xl"
               >
                 Back
               </Button>
@@ -163,7 +180,7 @@ export default function InterviewSetup() {
                 data-testid="start-interview-btn"
                 onClick={handleStartInterview}
                 disabled={loading}
-                className="flex-1 bg-primary hover:bg-primary/90 text-white font-medium py-6 rounded-md text-lg"
+                className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold py-6 rounded-xl text-lg shadow-lg hover:shadow-xl transition-all"
               >
                 {loading ? (
                   <>
