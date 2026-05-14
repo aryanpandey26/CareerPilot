@@ -50,18 +50,23 @@ export default function ResultsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
       {/* Header */}
-      <div className="bg-gradient-to-r from-slate-900 to-slate-800 text-white py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+      <div className="relative border-b border-purple-500/20 py-12 overflow-hidden">
+        <div className="absolute -top-24 -left-24 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-24 -right-24 w-96 h-96 bg-pink-500/20 rounded-full blur-3xl pointer-events-none" />
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.6 }}
           >
             <Trophy className="h-16 w-16 mx-auto mb-4 text-yellow-400" />
-            <h1 className="text-4xl md:text-5xl font-heading font-bold tracking-tight uppercase mb-4">
-              INTERVIEW COMPLETE!
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-white mb-4">
+              Interview{" "}
+              <span className="bg-gradient-to-r from-purple-300 via-pink-300 to-purple-400 bg-clip-text text-transparent">
+                Complete!
+              </span>
             </h1>
             <p className="text-lg text-slate-300">
               Here's how you performed
