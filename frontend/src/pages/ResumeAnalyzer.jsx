@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
-import { Upload, FileText, TrendingUp, CheckCircle2, AlertCircle } from "lucide-react";
+import { Upload, FileText, TrendingUp, CheckCircle2, AlertCircle, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
 import axios from "axios";
 
@@ -95,16 +95,30 @@ export default function ResumeAnalyzer() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-purple-50 to-pink-50">
       {/* Header */}
-      <div className="bg-secondary text-white py-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h1 className="text-3xl md:text-4xl font-heading font-bold tracking-tight uppercase">
-            ATS RESUME ANALYZER
-          </h1>
-          <p className="text-slate-300 mt-2">
-            Optimize your resume for Applicant Tracking Systems
-          </p>
+      <div className="bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 text-white py-16 relative overflow-hidden">
+        {/* Animated background circles */}
+        <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-0 left-0 w-64 h-64 bg-white/10 rounded-full blur-3xl"></div>
+        
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+          >
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/20 backdrop-blur-sm rounded-full mb-4">
+              <TrendingUp className="h-4 w-4" />
+              <span className="text-sm font-semibold">Powered by AI</span>
+            </div>
+            <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-3" style={{ fontFamily: 'Poppins, sans-serif' }}>
+              ATS Resume Analyzer
+            </h1>
+            <p className="text-xl text-white/90">
+              Optimize your resume for Applicant Tracking Systems
+            </p>
+          </motion.div>
         </div>
       </div>
 
@@ -116,38 +130,46 @@ export default function ResumeAnalyzer() {
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.6 }}
           >
-            <Card className="p-8">
-              <h2 className="text-2xl font-semibold text-secondary mb-6">
+            <Card className="p-8 bg-white/80 backdrop-blur-sm shadow-xl border-0">
+              <h2 className="text-2xl font-bold text-slate-800 mb-6" style={{ fontFamily: 'Poppins, sans-serif' }}>
                 Upload Your Details
               </h2>
 
               {/* Input Mode Toggle */}
-              <div className="mb-6 flex gap-2">
+              <div className="mb-6 flex gap-3">
                 <Button
                   data-testid="text-mode-btn"
                   onClick={() => setInputMode("text")}
-                  variant={inputMode === "text" ? "default" : "outline"}
-                  className="flex-1"
+                  className={`flex-1 rounded-xl py-6 text-base font-semibold transition-all ${
+                    inputMode === "text"
+                      ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg"
+                      : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                  }`}
                 >
+                  <FileText className="mr-2 h-5 w-5" />
                   Paste Text
                 </Button>
                 <Button
                   data-testid="pdf-mode-btn"
                   onClick={() => setInputMode("pdf")}
-                  variant={inputMode === "pdf" ? "default" : "outline"}
-                  className="flex-1"
+                  className={`flex-1 rounded-xl py-6 text-base font-semibold transition-all ${
+                    inputMode === "pdf"
+                      ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg"
+                      : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                  }`}
                 >
+                  <Upload className="mr-2 h-5 w-5" />
                   Upload PDF
                 </Button>
               </div>
 
               {/* Resume Input - Text or PDF */}
               <div className="mb-6">
-                <label className="block text-sm font-medium text-slate-700 mb-2">
+                <label className="block text-sm font-semibold text-slate-700 mb-3">
                   {inputMode === "pdf" ? "Resume (PDF)" : "Resume Text"}
                 </label>
                 {inputMode === "pdf" ? (
-                  <div className="border-2 border-dashed border-slate-300 rounded-lg p-8 text-center hover:border-primary transition-colors cursor-pointer">
+                  <div className="border-2 border-dashed border-purple-300 rounded-xl p-8 text-center hover:border-purple-400 transition-colors cursor-pointer bg-purple-50/50">
                     <input
                       data-testid="resume-upload-input"
                       type="file"
@@ -158,16 +180,16 @@ export default function ResumeAnalyzer() {
                     />
                     <label htmlFor="resume-upload" className="cursor-pointer">
                       {resumeFile ? (
-                        <div className="text-primary">
-                          <FileText className="h-12 w-12 mx-auto mb-2" />
-                          <p className="font-medium">{resumeFile.name}</p>
-                          <p className="text-sm text-slate-500">Click to change</p>
+                        <div className="text-purple-600">
+                          <FileText className="h-12 w-12 mx-auto mb-3" />
+                          <p className="font-semibold text-lg">{resumeFile.name}</p>
+                          <p className="text-sm text-slate-500 mt-1">Click to change</p>
                         </div>
                       ) : (
                         <div className="text-slate-500">
-                          <Upload className="h-12 w-12 mx-auto mb-2" />
-                          <p className="font-medium">Click to upload resume</p>
-                          <p className="text-sm">PDF format only</p>
+                          <Upload className="h-12 w-12 mx-auto mb-3 text-purple-400" />
+                          <p className="font-semibold text-slate-700">Click to upload resume</p>
+                          <p className="text-sm mt-1">PDF format only</p>
                         </div>
                       )}
                     </label>
@@ -189,14 +211,14 @@ Experience:
                     value={resumeText}
                     onChange={(e) => setResumeText(e.target.value)}
                     rows={12}
-                    className="w-full font-mono text-sm"
+                    className="w-full font-mono text-sm border-2 border-slate-200 focus:border-purple-400 rounded-xl"
                   />
                 )}
               </div>
 
               {/* Job Description */}
               <div className="mb-6">
-                <label className="block text-sm font-medium text-slate-700 mb-2">
+                <label className="block text-sm font-semibold text-slate-700 mb-3">
                   Job Description
                 </label>
                 <Textarea
@@ -205,7 +227,7 @@ Experience:
                   value={jobDescription}
                   onChange={(e) => setJobDescription(e.target.value)}
                   rows={10}
-                  className="w-full"
+                  className="w-full border-2 border-slate-200 focus:border-purple-400 rounded-xl"
                 />
               </div>
 
@@ -213,7 +235,7 @@ Experience:
                 data-testid="analyze-btn"
                 onClick={handleAnalyze}
                 disabled={analyzing}
-                className="w-full bg-primary hover:bg-primary/90 text-white font-medium py-6 rounded-md text-lg"
+                className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold py-6 rounded-xl text-lg shadow-lg hover:shadow-xl transition-all transform hover:scale-[1.02]"
               >
                 {analyzing ? (
                   <>
@@ -239,15 +261,15 @@ Experience:
             {result ? (
               <div className="space-y-6">
                 {/* ATS Score */}
-                <Card className="p-8">
+                <Card className="p-8 bg-gradient-to-br from-purple-50 to-pink-50 border-0 shadow-xl">
                   <div className="text-center">
-                    <p className="text-sm font-medium text-slate-600 uppercase tracking-wider mb-2">
+                    <p className="text-sm font-semibold text-purple-600 uppercase tracking-wider mb-3">
                       ATS Match Score
                     </p>
-                    <div className={`text-6xl font-heading font-bold ${getScoreColor(result.ats_score)} mb-2`}>
+                    <div className={`text-7xl font-bold mb-3 ${getScoreColor(result.ats_score)}`} style={{ fontFamily: 'Poppins, sans-serif' }}>
                       {result.ats_score}%
                     </div>
-                    <p className={`text-lg font-medium ${getScoreColor(result.ats_score)}`}>
+                    <p className={`text-lg font-semibold ${getScoreColor(result.ats_score)}`}>
                       {getScoreLabel(result.ats_score)}
                     </p>
                   </div>
@@ -255,10 +277,12 @@ Experience:
 
                 {/* Matching Skills */}
                 {result.matching_skills.length > 0 && (
-                  <Card className="p-6">
-                    <div className="flex items-center gap-2 mb-4">
-                      <CheckCircle2 className="h-5 w-5 text-accent" />
-                      <h3 className="text-lg font-semibold text-secondary">
+                  <Card className="p-6 bg-white/80 backdrop-blur-sm shadow-lg border-0">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="p-2 bg-green-100 rounded-lg">
+                        <CheckCircle2 className="h-5 w-5 text-green-600" />
+                      </div>
+                      <h3 className="text-lg font-bold text-slate-800" style={{ fontFamily: 'Poppins, sans-serif' }}>
                         Matching Skills
                       </h3>
                     </div>
@@ -266,7 +290,7 @@ Experience:
                       {result.matching_skills.map((skill, idx) => (
                         <span
                           key={idx}
-                          className="px-3 py-1 bg-accent/10 text-accent rounded-full text-sm font-medium"
+                          className="px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-full text-sm font-semibold shadow-md"
                         >
                           {skill}
                         </span>
@@ -277,10 +301,12 @@ Experience:
 
                 {/* Missing Skills */}
                 {result.missing_skills.length > 0 && (
-                  <Card className="p-6">
-                    <div className="flex items-center gap-2 mb-4">
-                      <AlertCircle className="h-5 w-5 text-destructive" />
-                      <h3 className="text-lg font-semibold text-secondary">
+                  <Card className="p-6 bg-white/80 backdrop-blur-sm shadow-lg border-0">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="p-2 bg-red-100 rounded-lg">
+                        <AlertCircle className="h-5 w-5 text-red-600" />
+                      </div>
+                      <h3 className="text-lg font-bold text-slate-800" style={{ fontFamily: 'Poppins, sans-serif' }}>
                         Missing Skills
                       </h3>
                     </div>
@@ -288,7 +314,7 @@ Experience:
                       {result.missing_skills.map((skill, idx) => (
                         <span
                           key={idx}
-                          className="px-3 py-1 bg-destructive/10 text-destructive rounded-full text-sm font-medium"
+                          className="px-4 py-2 bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-full text-sm font-semibold shadow-md"
                         >
                           {skill}
                         </span>
@@ -299,15 +325,18 @@ Experience:
 
                 {/* Improvement Suggestions */}
                 {result.improvement_suggestions.length > 0 && (
-                  <Card className="p-6">
-                    <h3 className="text-lg font-semibold text-secondary mb-4">
+                  <Card className="p-6 bg-white/80 backdrop-blur-sm shadow-lg border-0">
+                    <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                      <div className="p-2 bg-blue-100 rounded-lg">
+                        <TrendingUp className="h-5 w-5 text-blue-600" />
+                      </div>
                       Improvement Suggestions
                     </h3>
-                    <ul className="space-y-2">
+                    <ul className="space-y-3">
                       {result.improvement_suggestions.map((suggestion, idx) => (
-                        <li key={idx} className="flex items-start gap-2">
-                          <span className="text-primary mt-1">•</span>
-                          <span className="text-slate-600">{suggestion}</span>
+                        <li key={idx} className="flex items-start gap-3 p-3 bg-blue-50 rounded-lg">
+                          <span className="text-blue-600 font-bold">•</span>
+                          <span className="text-slate-700">{suggestion}</span>
                         </li>
                       ))}
                     </ul>
@@ -318,18 +347,23 @@ Experience:
                 <Button
                   data-testid="proceed-to-interview-btn"
                   onClick={() => navigate("/setup", { state: { analysisResult: result } })}
-                  className="w-full bg-primary hover:bg-primary/90 text-white font-medium py-6 rounded-md text-lg"
+                  className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold py-6 rounded-xl text-lg shadow-lg hover:shadow-xl transition-all transform hover:scale-[1.02]"
                 >
                   Proceed to Interview Setup
+                  <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
               </div>
             ) : (
-              <Card className="p-12 text-center">
-                <TrendingUp className="h-16 w-16 mx-auto text-slate-300 mb-4" />
-                <h3 className="text-xl font-semibold text-slate-600 mb-2">
+              <Card className="p-12 text-center bg-white/80 backdrop-blur-sm shadow-xl border-0">
+                <div className="mb-6">
+                  <div className="inline-flex p-4 bg-gradient-to-br from-purple-100 to-pink-100 rounded-2xl">
+                    <TrendingUp className="h-16 w-16 text-purple-600" />
+                  </div>
+                </div>
+                <h3 className="text-2xl font-bold text-slate-800 mb-3" style={{ fontFamily: 'Poppins, sans-serif' }}>
                   Results will appear here
                 </h3>
-                <p className="text-slate-500">
+                <p className="text-slate-600 text-lg">
                   Upload your resume and job description to get started
                 </p>
               </Card>
