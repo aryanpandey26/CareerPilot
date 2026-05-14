@@ -41,6 +41,13 @@ export default function InterviewRoomWithVideo() {
   const recordedChunksRef = useRef([]);
   const faceDetectionIntervalRef = useRef(null);
 
+  // Audio-only recording (for Whisper STT)
+  const audioStreamRef = useRef(null);
+  const audioRecorderRef = useRef(null);
+  const audioChunksRef = useRef([]);
+  const [isAudioRecording, setIsAudioRecording] = useState(false);
+  const [isTranscribing, setIsTranscribing] = useState(false);
+
   useEffect(() => {
     loadSession();
     setupCheatingDetection();
@@ -190,6 +197,75 @@ export default function InterviewRoomWithVideo() {
     }
   };
 
+  // ---- Audio (microphone) recording with Whisper STT ----
+  const startAudioRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      audioStreamRef.current = stream;
+      audioChunksRef.current = [];
+      const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
+        ? "audio/webm;codecs=opus"
+        : "audio/webm";
+      const recorder = new MediaRecorder(stream, { mimeType });
+      audioRecorderRef.current = recorder;
+
+      recorder.ondataavailable = (e) => {
+        if (e.data && e.data.size > 0) audioChunksRef.current.push(e.data);
+      };
+
+      recorder.onstop = async () => {
+        const blob = new Blob(audioChunksRef.current, { type: "audio/webm" });
+        // Release mic
+        if (audioStreamRef.current) {
+          audioStreamRef.current.getTracks().forEach((t) => t.stop());
+          audioStreamRef.current = null;
+        }
+        await transcribeAndAppend(blob);
+      };
+
+      recorder.start();
+      setIsAudioRecording(true);
+      toast.success("Recording... speak your answer.");
+    } catch (err) {
+      console.error("Mic error:", err);
+      toast.error("Microphone permission denied or unavailable.");
+    }
+  };
+
+  const stopAudioRecording = () => {
+    if (audioRecorderRef.current && audioRecorderRef.current.state === "recording") {
+      audioRecorderRef.current.stop();
+      setIsAudioRecording(false);
+    }
+  };
+
+  const transcribeAndAppend = async (blob) => {
+    try {
+      setIsTranscribing(true);
+      const fd = new FormData();
+      fd.append("audio", blob, "answer.webm");
+      fd.append("session_id", sessionId);
+      fd.append("question_index", String(currentQuestionIndex));
+
+      const res = await axios.post(`${API}/transcribe-audio`, fd, {
+        headers: { "Content-Type": "multipart/form-data" },
+        timeout: 60000,
+      });
+      const transcript = res?.data?.transcript || "";
+      if (transcript) {
+        setCurrentAnswer((prev) => (prev ? prev + " " + transcript : transcript));
+        toast.success("Transcription added to your answer.");
+      } else {
+        toast.message("No speech detected.");
+      }
+    } catch (err) {
+      console.error("Transcription error:", err);
+      toast.error("Transcription failed. Please type your answer.");
+    } finally {
+      setIsTranscribing(false);
+    }
+  };
+
   const handleNextQuestion = () => {
     // Allow empty answers for skipped questions
     const answerText = currentAnswer.trim() || "[No answer provided]";
@@ -224,21 +300,19 @@ export default function InterviewRoomWithVideo() {
     try {
       // Use finalAnswers parameter to ensure we have the latest answers
       const answersToSubmit = finalAnswers || answers;
-      
-      // Evaluate all answers
-      for (let i = 0; i < answersToSubmit.length; i++) {
-        const answer = answersToSubmit[i];
-        try {
-          await axios.post(`${API}/evaluate-answer`, {
-            session_id: sessionId,
-            question_index: answer.questionIndex,
-            answer: answer.answer,
-            skill_tag: session.questions[answer.questionIndex].type,
-          });
-        } catch (error) {
-          console.error(`Error evaluating answer ${i + 1}:`, error);
-          // Continue with other answers even if one fails
-        }
+
+      // Single batched evaluation (no more per-question 404s)
+      try {
+        await axios.post(`${API}/evaluate-interview-batch`, {
+          session_id: sessionId,
+          answers: answersToSubmit.map((a) => ({
+            question_index: a.questionIndex,
+            answer: a.answer,
+          })),
+        });
+      } catch (error) {
+        console.error("Batch evaluation error:", error);
+        toast.error("Evaluation partially failed, but results saved.");
       }
 
       // Save cheating analysis
@@ -322,10 +396,37 @@ export default function InterviewRoomWithVideo() {
                 rows={6}
                 className="bg-slate-900/50 border-purple-500/30 text-white placeholder:text-slate-400 text-base focus:border-purple-400 transition-colors"
               />
-              <div className="mt-4 flex items-center justify-between">
-                <span className="text-slate-400 text-sm">
-                  {currentAnswer.split(' ').filter(w => w).length} words
-                </span>
+              <div className="mt-4 flex items-center justify-between gap-4 flex-wrap">
+                <div className="flex items-center gap-3">
+                  <span className="text-slate-400 text-sm">
+                    {currentAnswer.split(' ').filter(w => w).length} words
+                  </span>
+                  <Button
+                    type="button"
+                    data-testid="mic-record-btn"
+                    onClick={isAudioRecording ? stopAudioRecording : startAudioRecording}
+                    disabled={isTranscribing}
+                    className={`${
+                      isAudioRecording
+                        ? "bg-red-600 hover:bg-red-700 animate-pulse"
+                        : "bg-slate-700 hover:bg-slate-600"
+                    } text-white font-medium px-4 py-2 rounded-lg`}
+                  >
+                    {isAudioRecording ? (
+                      <>
+                        <MicOff className="mr-2 h-4 w-4" /> Stop & Transcribe
+                      </>
+                    ) : isTranscribing ? (
+                      <>
+                        <Mic className="mr-2 h-4 w-4 animate-pulse" /> Transcribing...
+                      </>
+                    ) : (
+                      <>
+                        <Mic className="mr-2 h-4 w-4" /> Record Answer
+                      </>
+                    )}
+                  </Button>
+                </div>
                 <Button
                   data-testid="next-question-btn"
                   onClick={handleNextQuestion}

@@ -12,6 +12,7 @@ from datetime import datetime, timezone
 import PyPDF2
 import io
 from emergentintegrations.llm.chat import LlmChat, UserMessage
+from emergentintegrations.llm.openai import OpenAISpeechToText
 import json
 import base64
 
@@ -533,30 +534,33 @@ async def get_interview_history():
     sessions = await db.interview_sessions.find({}, {"_id": 0}).to_list(100)
     return sessions
 
-@api_router.post("/save-cheating-analysis")
-async def save_cheating_analysis(
-    session_id: str,
-    cheating_events: List[Dict[str, Any]],
-    total_warnings: int,
+class CheatingAnalysisRequest(BaseModel):
+    session_id: str
+    cheating_events: List[Dict[str, Any]]
+    total_warnings: int
     video_count: int
-):
+
+@api_router.post("/save-cheating-analysis")
+async def save_cheating_analysis(payload: CheatingAnalysisRequest):
     """Save cheating detection analysis"""
     try:
         analysis = {
-            "session_id": session_id,
-            "cheating_events": cheating_events,
-            "total_warnings": total_warnings,
-            "video_count": video_count,
+            "session_id": payload.session_id,
+            "cheating_events": payload.cheating_events,
+            "total_warnings": payload.total_warnings,
+            "video_count": payload.video_count,
             "timestamp": datetime.now(timezone.utc).isoformat(),
-            "risk_level": "high" if total_warnings >= 2 else "medium" if total_warnings == 1 else "low"
+            "risk_level": "high" if payload.total_warnings >= 2 else "medium" if payload.total_warnings == 1 else "low"
         }
         
         await db.cheating_analyses.insert_one(analysis)
+        # Strip Mongo _id before returning
+        analysis.pop("_id", None)
         
         # Update session with cheating flag
         await db.interview_sessions.update_one(
-            {"id": session_id},
-            {"$set": {"has_cheating_concerns": total_warnings > 0, "cheating_warnings": total_warnings}}
+            {"id": payload.session_id},
+            {"$set": {"has_cheating_concerns": payload.total_warnings > 0, "cheating_warnings": payload.total_warnings}}
         )
         
         return {"success": True, "analysis": analysis}
@@ -571,6 +575,175 @@ async def get_cheating_analysis(session_id: str):
     if not analysis:
         return {"session_id": session_id, "cheating_events": [], "total_warnings": 0, "risk_level": "low"}
     return analysis
+
+class BatchAnswerItem(BaseModel):
+    question_index: int
+    answer: str
+
+class BatchEvaluationRequest(BaseModel):
+    session_id: str
+    answers: List[BatchAnswerItem]
+
+class BatchEvaluationResponse(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    session_id: str
+    evaluations: List[Dict[str, Any]]
+    average_score: float
+
+@api_router.post("/evaluate-interview-batch", response_model=BatchEvaluationResponse)
+async def evaluate_interview_batch(request: BatchEvaluationRequest):
+    """Evaluate ALL interview answers at once on final submit"""
+    try:
+        session = await db.interview_sessions.find_one({"id": request.session_id}, {"_id": 0})
+        if not session:
+            raise HTTPException(status_code=404, detail="Session not found")
+
+        # Build a single batched prompt: model returns evaluations as JSON array
+        qa_pairs = []
+        for item in request.answers:
+            if item.question_index >= len(session["questions"]):
+                continue
+            q = session["questions"][item.question_index]
+            qa_pairs.append({
+                "question_index": item.question_index,
+                "question": q["text"],
+                "skill_tag": q.get("type", "general"),
+                "answer": item.answer,
+            })
+
+        prompt = f"""Evaluate the following interview answers. Return a STRICT JSON array (no markdown).
+
+Each evaluation must contain:
+- question_index (int, matches input)
+- technical_accuracy (0-10)
+- depth (0-10)
+- clarity (0-10)
+- confidence (0-10)
+- overall_score (0-100, weighted: 40% technical, 25% depth, 20% clarity, 15% confidence)
+- strengths (array of strings)
+- weaknesses (array of strings)
+- model_answer (string)
+- improvement_suggestions (array of strings)
+
+Input answers:
+{json.dumps(qa_pairs, indent=2)}
+
+Return ONLY a JSON array like: [{{"question_index": 0, ...}}, ...]"""
+
+        system_message = "You are a professional technical interviewer. Evaluate each answer objectively, returning a structured JSON array."
+        response = await call_llm(prompt, system_message)
+
+        # Parse JSON response
+        response_clean = response.strip()
+        if response_clean.startswith("```"):
+            response_clean = response_clean.split("```")[1]
+            if response_clean.startswith("json"):
+                response_clean = response_clean[4:]
+        response_clean = response_clean.strip()
+
+        evaluations_list = json.loads(response_clean)
+        if not isinstance(evaluations_list, list):
+            raise ValueError("LLM did not return a JSON array")
+
+        # Save each answer + evaluation back into the session
+        answers_to_persist = []
+        scores = []
+        for idx, ev in enumerate(evaluations_list):
+            q_idx = ev.get("question_index", idx)
+            input_item = next((p for p in qa_pairs if p["question_index"] == q_idx), None)
+            if input_item is None:
+                continue
+            answers_to_persist.append({
+                "question_index": q_idx,
+                "answer": input_item["answer"],
+                "evaluation": ev,
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+            })
+            if isinstance(ev.get("overall_score"), (int, float)):
+                scores.append(float(ev["overall_score"]))
+
+        # Replace any existing answers for these question indices
+        await db.interview_sessions.update_one(
+            {"id": request.session_id},
+            {"$set": {"answers": answers_to_persist,
+                      "evaluated_at": datetime.now(timezone.utc).isoformat()}}
+        )
+
+        avg = sum(scores) / len(scores) if scores else 0.0
+        return BatchEvaluationResponse(
+            session_id=request.session_id,
+            evaluations=evaluations_list,
+            average_score=round(avg, 2),
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Error in batch evaluation: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ---------- Audio Transcription (Whisper STT) ----------
+@api_router.post("/transcribe-audio")
+async def transcribe_audio(
+    audio: UploadFile = File(...),
+    session_id: Optional[str] = Form(None),
+    question_index: Optional[int] = Form(None),
+):
+    """Transcribe an uploaded audio blob using OpenAI Whisper via Emergent LLM key."""
+    try:
+        if not LLM_API_KEY:
+            raise HTTPException(status_code=500, detail="EMERGENT_LLM_KEY missing on server")
+
+        content = await audio.read()
+        if not content:
+            raise HTTPException(status_code=400, detail="Empty audio payload")
+
+        # Persist temp file (whisper requires a file-like with name extension)
+        ext = ".webm"
+        filename = audio.filename or "audio.webm"
+        if "." in filename:
+            ext = "." + filename.rsplit(".", 1)[-1].lower()
+            if ext not in {".mp3", ".mp4", ".mpeg", ".mpga", ".m4a", ".wav", ".webm"}:
+                ext = ".webm"
+
+        tmp_path = Path(f"/tmp/{uuid.uuid4().hex}{ext}")
+        tmp_path.write_bytes(content)
+
+        stt = OpenAISpeechToText(api_key=LLM_API_KEY)
+        with open(tmp_path, "rb") as audio_file:
+            response = await stt.transcribe(
+                file=audio_file,
+                model="whisper-1",
+                response_format="json",
+                language="en",
+            )
+
+        try:
+            tmp_path.unlink(missing_ok=True)
+        except Exception:
+            pass
+
+        transcript = getattr(response, "text", None) or str(response)
+
+        # Optionally store transcript on the session
+        if session_id and question_index is not None:
+            await db.audio_transcripts.insert_one({
+                "id": str(uuid.uuid4()),
+                "session_id": session_id,
+                "question_index": question_index,
+                "transcript": transcript,
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+            })
+
+        return {"transcript": transcript, "success": True}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Error transcribing audio: {e}")
+        raise HTTPException(status_code=500, detail=f"Transcription failed: {str(e)}")
+
 
 # Include the router in the main app
 app.include_router(api_router)
