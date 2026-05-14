@@ -129,6 +129,7 @@ export default function ResumeAnalyzer() {
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.6 }}
+            className="w-full"
           >
             <Card className="p-8 bg-white/80 backdrop-blur-sm shadow-xl border-0">
               <h2 className="text-2xl font-bold text-slate-800 mb-6" style={{ fontFamily: 'Poppins, sans-serif' }}>
@@ -257,6 +258,7 @@ Experience:
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.6 }}
+            className="w-full"
           >
             {result ? (
               <div className="space-y-6">
@@ -327,19 +329,19 @@ Experience:
                     )}
                   </div>
 
-                  {/* Improvement Suggestions - Full Width */}
+                  {/* Improvement Suggestions - Full Width with Better Layout */}
                   {result.improvement_suggestions.length > 0 && (
-                    <Card className="p-8 bg-white/80 backdrop-blur-sm shadow-lg border-0">
+                    <Card className="p-6 md:p-8 bg-white/80 backdrop-blur-sm shadow-lg border-0 w-full">
                       <h3 className="text-xl font-bold text-slate-800 mb-6 flex items-center gap-3" style={{ fontFamily: 'Poppins, sans-serif' }}>
                         <div className="p-3 bg-blue-100 rounded-xl">
                           <TrendingUp className="h-6 w-6 text-blue-600" />
                         </div>
                         Improvement Suggestions
                       </h3>
-                      <div className="space-y-4">
+                      <div className="space-y-3 w-full">
                         {result.improvement_suggestions.map((suggestion, idx) => (
-                          <div key={idx} className="flex items-start gap-4 p-5 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border-2 border-blue-200 hover:border-blue-300 transition-colors">
-                            <span className="text-blue-600 font-bold text-xl flex-shrink-0">{idx + 1}.</span>
+                          <div key={idx} className="flex items-start gap-3 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border-2 border-blue-200 hover:border-blue-300 transition-colors w-full">
+                            <span className="text-blue-600 font-bold text-lg flex-shrink-0 min-w-[2rem]">{idx + 1}.</span>
                             <span className="text-slate-700 text-base leading-relaxed flex-1">{suggestion}</span>
                           </div>
                         ))}
