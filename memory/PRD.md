@@ -16,11 +16,12 @@ Build an AI-powered mock interview platform with:
 - DB: MongoDB (NOT PostgreSQL — environment mandate)
 
 ## Implemented (Feb 2026 — current fork)
-- [Feb 14] **Per-user Dashboard history** — session IDs are persisted to `localStorage["interviewSessionIds"]` when interviews are created; Dashboard filters history, Total Interviews, Average Score, and Strong/Weak/Focus sections strictly by those IDs. Fresh browsers correctly show 0% / empty-state CTA.
-- [Feb 14] **Video upload race fix** — `pendingUploadsRef` tracks each upload promise; final submit stops the active recorder, waits for `onstop`, then `Promise.allSettled(...)` before evaluation. Added "Uploading your last video clip..." stage to the evaluating overlay.
-- [Feb 14] **Webcam audio enabled** (`<Webcam audio={true} />`) — recordings now contain voice, enriching deep proctoring analysis.
-- [Feb 14] **Results page dark-theme polish** — Overall Performance, per-question evaluation cards, Recorded Clips, Proctoring Analysis card all switched to `bg-slate-800/60 + text-white/purple-200/slate-300`. Readable on the dark gradient background.
-- [Feb 14] Cheating-warning closure bug fixed, Evaluating overlay between submit and results, Improvement Suggestions expanded, History filtering, Video upload + persistence, Deep LLM proctoring, `/api/evaluate-answer → 410`, batch eval idempotency, Whisper STT, Dashboard/Results gradient theme.
+- [Feb 17] **Authentication layer** — `/api/auth/{register,login,google-session,me,logout}`. JWT-based email/password + Emergent-managed Google OAuth (1-click). New pages: `/login`, `/signup`, `/auth/callback`. AuthContext + ProtectedRoute guard `/setup`, `/interview/*`, `/results/*`, `/dashboard`. Navigation shows "Hi, &lt;name&gt;" + Sign-out when logged in.
+- [Feb 17] **Per-user data isolation** — `interview_sessions` and `ats_analyses` stamped with `user_id` when an authenticated request creates them. `GET /api/analytics/history` filters by current user; anonymous → empty. Dropped the localStorage-id hack.
+- [Feb 17] **Job recommendations** — `POST /api/jobs/recommend` LLM-curates two buckets: 5 "Apply today" + 5 "Unlock with skills". Each job has Naukri / LinkedIn / Indeed / Unstop search links. New `<JobMatches />` shows up on `/analyze` after analysis.
+- [Feb 17] **Camera-permission warning fix** — `suppressBlurUntilRef` skips the next ~8s of blur/visibility events after `Enable Camera` (and ~6s after mic permission), so the browser permission prompt no longer counts as a violation.
+- [Feb 17] **Landing page cleanup** — removed the fake "95% / 10K+ / 50K+" stats section.
+- [Feb 14] All earlier work (batch eval, Whisper STT, video upload, deep proctoring, 3-strike warning, dark Results theme, expanded Improvement Suggestions, etc.) retained.
 
 ## Previously implemented (prior forks)
 - Landing page redesign with modern gradient theme.
