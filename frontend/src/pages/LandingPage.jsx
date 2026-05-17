@@ -1,13 +1,85 @@
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Target, TrendingUp, Award, Brain, Sparkles, Zap, CheckCircle } from "lucide-react";
+import { ArrowRight, Target, TrendingUp, Award, Brain, Sparkles, Zap, CheckCircle, LogIn, UserPlus, LogOut } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
+import { toast } from "sonner";
 
 export default function LandingPage() {
   const navigate = useNavigate();
+  const { user, logout } = useAuth();
+
+  const handleLogout = async () => {
+    await logout();
+    toast.success("Signed out");
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-purple-50 to-pink-50">
+      {/* Top header — auth controls */}
+      <header className="absolute top-0 left-0 right-0 z-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 flex items-center justify-between">
+          <div
+            data-testid="landing-brand"
+            className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 bg-clip-text text-transparent cursor-pointer"
+            style={{ fontFamily: "Poppins, sans-serif" }}
+            onClick={() => navigate("/")}
+          >
+            Interview AI
+          </div>
+
+          <div className="flex items-center gap-2 sm:gap-3">
+            {user ? (
+              <>
+                <span
+                  data-testid="landing-user-label"
+                  className="hidden sm:inline text-sm font-medium text-slate-700 px-3 py-1 rounded-full bg-white/70 backdrop-blur-sm border border-purple-200"
+                  title={user.email}
+                >
+                  Hi, {user.name?.split(" ")[0] || "there"}
+                </span>
+                <Button
+                  data-testid="landing-dashboard-btn"
+                  onClick={() => navigate("/dashboard")}
+                  className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold rounded-full px-5 shadow-md"
+                >
+                  Dashboard
+                </Button>
+                <Button
+                  data-testid="landing-logout-btn"
+                  onClick={handleLogout}
+                  variant="ghost"
+                  className="text-slate-700 hover:text-rose-600 hover:bg-white/60 rounded-full"
+                >
+                  <LogOut className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Sign out</span>
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button
+                  data-testid="landing-login-btn"
+                  onClick={() => navigate("/login")}
+                  variant="ghost"
+                  className="text-slate-700 hover:text-purple-700 hover:bg-white/60 font-semibold rounded-full"
+                >
+                  <LogIn className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Sign in</span>
+                </Button>
+                <Button
+                  data-testid="landing-signup-btn"
+                  onClick={() => navigate("/signup")}
+                  className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold rounded-full px-5 shadow-md"
+                >
+                  <UserPlus className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Sign up</span>
+                </Button>
+              </>
+            )}
+          </div>
+        </div>
+      </header>
+
       {/* Hero Section */}
       <section className="relative overflow-hidden py-20 md:py-32">
         {/* Animated Background Elements */}
