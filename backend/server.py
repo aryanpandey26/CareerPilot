@@ -1,4 +1,4 @@
-from fastapi import FastAPI, APIRouter, UploadFile, File, HTTPException, Form
+from fastapi import FastAPI, APIRouter, UploadFile, File, HTTPException, Form, Request
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -15,6 +15,7 @@ from emergentintegrations.llm.chat import LlmChat, UserMessage
 from emergentintegrations.llm.openai import OpenAISpeechToText
 import json
 import base64
+from auth import router as auth_router, set_db as set_auth_db, get_current_user
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -214,9 +215,17 @@ Scoring Logic:
         raise HTTPException(status_code=500, detail=str(e))
 
 @api_router.post("/analyze-resume-text", response_model=ATSAnalysisResult)
-async def analyze_resume_text(request: ResumeAnalysisRequest):
+async def analyze_resume_text(request: ResumeAnalysisRequest, user_request: Request):
     """Analyze resume against job description (text-based)"""
     try:
+        # Optional user binding (analyses are still allowed for anonymous users)
+        current_user_id = None
+        try:
+            user = await get_current_user(user_request)
+            current_user_id = user["user_id"]
+        except HTTPException:
+            current_user_id = None
+
         resume_text = request.resume_text
         job_description = request.job_description
         
@@ -269,9 +278,12 @@ Scoring Logic:
             result_data = json.loads(response_clean)
             analysis = ATSAnalysisResult(**result_data)
             
-            # Store in database
+            # Store in database (with user binding when available)
             doc = analysis.model_dump()
+            if current_user_id:
+                doc["user_id"] = current_user_id
             await db.ats_analyses.insert_one(doc)
+            doc.pop("_id", None)
             
             return analysis
         except json.JSONDecodeError as e:
@@ -348,9 +360,16 @@ async def evaluate_answer(submission: AnswerSubmission):
     )
 
 @api_router.post("/interview-session", response_model=InterviewSession)
-async def create_interview_session(request: InterviewSessionRequest):
-    """Create a new interview session"""
+async def create_interview_session(request: InterviewSessionRequest, user_request: Request):
+    """Create a new interview session, tagged with current user if authenticated."""
     try:
+        current_user_id = None
+        try:
+            user = await get_current_user(user_request)
+            current_user_id = user["user_id"]
+        except HTTPException:
+            current_user_id = None
+
         # Format questions
         all_questions = []
         for q in request.questions.technical_questions:
@@ -366,8 +385,10 @@ async def create_interview_session(request: InterviewSessionRequest):
             questions=all_questions
         )
         
-        # Store in database
+        # Store in database (with user binding when available)
         doc = session.model_dump()
+        if current_user_id:
+            doc["user_id"] = current_user_id
         await db.interview_sessions.insert_one(doc)
         
         return session
@@ -458,9 +479,16 @@ Rules:
         raise HTTPException(status_code=500, detail=str(e))
 
 @api_router.get("/analytics/history")
-async def get_interview_history():
-    """Get all interview sessions"""
-    sessions = await db.interview_sessions.find({}, {"_id": 0}).to_list(100)
+async def get_interview_history(user_request: Request):
+    """Get interview sessions — filtered by current user if authenticated."""
+    query = {}
+    try:
+        user = await get_current_user(user_request)
+        query["user_id"] = user["user_id"]
+    except HTTPException:
+        # Anonymous: return empty (force login for personalized data)
+        return []
+    sessions = await db.interview_sessions.find(query, {"_id": 0}).to_list(200)
     return sessions
 
 class CheatingAnalysisRequest(BaseModel):
@@ -868,12 +896,125 @@ async def get_deep_cheating(session_id: str):
     return doc
 
 
+# ---------- Job Recommendations ----------
+class JobRecommendationRequest(BaseModel):
+    matching_skills: List[str] = []
+    missing_skills: List[str] = []
+    job_title: str = ""
+    experience_level: str = ""
+    location: str = "India"
+
+
+def _build_search_url(query: str, location: str, source: str) -> str:
+    import urllib.parse
+    q = urllib.parse.quote_plus(query)
+    loc = urllib.parse.quote_plus(location or "India")
+    if source == "naukri":
+        return f"https://www.naukri.com/{q.replace('+', '-')}-jobs-in-{loc.replace('+', '-')}"
+    if source == "linkedin":
+        return f"https://www.linkedin.com/jobs/search/?keywords={q}&location={loc}"
+    if source == "unstop":
+        return f"https://unstop.com/jobs?search={q}"
+    if source == "indeed":
+        return f"https://www.indeed.com/jobs?q={q}&l={loc}"
+    return f"https://www.google.com/search?q={q}+jobs+{loc}"
+
+
+@api_router.post("/jobs/recommend")
+async def recommend_jobs(req: JobRecommendationRequest):
+    """Generate two buckets of job recommendations using the LLM:
+    1) 'current_match' — roles the candidate can apply for today.
+    2) 'stretch'       — roles unlocked if they add the listed missing skills.
+    """
+    try:
+        prompt = f"""You are a senior tech recruiter for the Indian and global markets.
+
+CANDIDATE PROFILE:
+- Target role: {req.job_title or 'Unspecified'}
+- Experience level: {req.experience_level or 'Unspecified'}
+- Preferred location: {req.location}
+- Skills the candidate ALREADY HAS: {', '.join(req.matching_skills) or 'None provided'}
+- Skills the candidate is MISSING for their target role: {', '.join(req.missing_skills) or 'None provided'}
+
+Return STRICT JSON (no markdown) with exactly this shape:
+{{
+  "current_match": [
+    {{
+      "role": "Frontend Engineer",
+      "company": "Plausible-sounding Indian/global company name",
+      "location": "City, Country",
+      "experience": "0-2 yrs | 2-4 yrs | 4-7 yrs | 7+ yrs",
+      "salary_range": "INR 6–10 LPA or USD 80–120k",
+      "match_score": 0-100,
+      "why_match": "1-2 sentence reason tied to the candidate's existing skills",
+      "key_skills_used": ["React", "TypeScript", ...]
+    }}
+  ],
+  "stretch": [
+    {{
+      "role": "Senior Full-Stack Engineer",
+      "company": "...",
+      "location": "...",
+      "experience": "...",
+      "salary_range": "...",
+      "match_score": 0-100,
+      "missing_skills_needed": ["Docker", "Kubernetes"],
+      "why_stretch": "1-2 sentence reason explaining what adding those skills unlocks",
+      "key_skills_used": [...]
+    }}
+  ]
+}}
+
+Rules:
+- Exactly 5 entries in current_match and exactly 5 in stretch.
+- Use realistic Indian companies (Razorpay, Zomato, Swiggy, Flipkart, Freshworks, CRED, Postman, Atlan, Hasura, Groww, etc.) plus 1-2 global names (Microsoft, Google, Atlassian) where appropriate.
+- match_score must be honest: current_match should be 70-95; stretch should be 35-70 reflecting the missing skills.
+- DO NOT fabricate job IDs or URLs — we'll add search links separately.
+- Vary role seniority appropriately for the experience level.
+- For current_match, key_skills_used should overlap heavily with the matching_skills list.
+- For stretch, missing_skills_needed MUST be a subset of the input missing_skills."""
+
+        system = "You are an expert tech recruiter. Output ONLY a JSON object — no prose, no markdown fences."
+        response = await call_llm(prompt, system)
+
+        clean = response.strip()
+        if clean.startswith("```"):
+            clean = clean.split("```")[1]
+            if clean.startswith("json"):
+                clean = clean[4:]
+        clean = clean.strip()
+
+        data = json.loads(clean)
+        # Attach search URLs to each item
+        for bucket in ("current_match", "stretch"):
+            for item in data.get(bucket, []):
+                query = f"{item.get('role', req.job_title)} {item.get('company', '')}".strip()
+                item["apply_links"] = {
+                    "naukri": _build_search_url(query, req.location, "naukri"),
+                    "linkedin": _build_search_url(query, req.location, "linkedin"),
+                    "indeed": _build_search_url(query, req.location, "indeed"),
+                    "unstop": _build_search_url(query, req.location, "unstop"),
+                }
+        return data
+
+    except HTTPException:
+        raise
+    except json.JSONDecodeError as e:
+        logging.error(f"Job-recommend JSON parse error: {e}")
+        raise HTTPException(status_code=500, detail="Could not parse job recommendations")
+    except Exception as e:
+        logging.error(f"Job-recommend error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 # Static video serving (after router so /api/videos is matched first)
 from fastapi.staticfiles import StaticFiles
 app.mount("/api/videos", StaticFiles(directory=str(VIDEO_UPLOAD_DIR)), name="videos")
 
 
 # Include the router in the main app
+set_auth_db(db)
+app.include_router(auth_router)
 app.include_router(api_router)
 
 app.add_middleware(

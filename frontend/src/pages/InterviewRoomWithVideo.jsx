@@ -46,6 +46,10 @@ export default function InterviewRoomWithVideo() {
   const warningsRef = useRef(0);
   const cheatingCancelledRef = useRef(false);
   const currentQuestionIndexRef = useRef(0);
+  // Suppress one upcoming blur/visibility event right after a permission prompt
+  // (camera/mic prompts move focus to the browser chrome, which would otherwise
+  // be counted as a violation.)
+  const suppressBlurUntilRef = useRef(0);
 
   // Audio-only recording (for Whisper STT)
   const audioStreamRef = useRef(null);
@@ -89,6 +93,8 @@ export default function InterviewRoomWithVideo() {
 
     const triggerWarning = (type, description, suffix) => {
       if (cheatingCancelledRef.current) return;
+      // Skip if we're inside a known permission-prompt window
+      if (Date.now() < suppressBlurUntilRef.current) return;
       const newCount = warningsRef.current + 1;
       warningsRef.current = newCount;
       setCheatingWarnings(newCount);
@@ -256,8 +262,23 @@ export default function InterviewRoomWithVideo() {
   };
 
   // ---- Audio (microphone) recording with Whisper STT ----
+  const enableCamera = () => {
+    suppressBlurUntilRef.current = Date.now() + 8000;
+    setIsCameraOn(true);
+  };
+
+  const toggleCamera = () => {
+    if (!isCameraOn) {
+      enableCamera();
+    } else {
+      setIsCameraOn(false);
+    }
+  };
+
   const startAudioRecording = async () => {
     try {
+      // Browser may show a mic permission prompt; suppress next ~6s of blur events.
+      suppressBlurUntilRef.current = Date.now() + 6000;
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       audioStreamRef.current = stream;
       audioChunksRef.current = [];
@@ -623,7 +644,7 @@ export default function InterviewRoomWithVideo() {
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-white font-semibold">Video Recording</h3>
                 <Button
-                  onClick={() => setIsCameraOn(!isCameraOn)}
+                  onClick={toggleCamera}
                   variant="ghost"
                   size="sm"
                   className={`${isCameraOn ? 'text-green-400' : 'text-slate-400'}`}
@@ -662,7 +683,7 @@ export default function InterviewRoomWithVideo() {
                     <EyeOff className="h-12 w-12 mx-auto mb-2 opacity-50" />
                     <p className="text-sm">Camera Off</p>
                     <Button
-                      onClick={() => setIsCameraOn(true)}
+                      onClick={enableCamera}
                       size="sm"
                       className="mt-3 bg-purple-600 hover:bg-purple-700 text-white"
                     >

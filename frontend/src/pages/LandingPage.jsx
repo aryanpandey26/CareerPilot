@@ -79,27 +79,6 @@ export default function LandingPage() {
                 View Dashboard
               </Button>
             </motion.div>
-
-            {/* Stats */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.4 }}
-              className="mt-16 grid grid-cols-3 gap-8 max-w-2xl mx-auto"
-            >
-              {[
-                { number: "95%", label: "Success Rate" },
-                { number: "10K+", label: "Users" },
-                { number: "50K+", label: "Interviews" },
-              ].map((stat, idx) => (
-                <div key={idx} className="text-center">
-                  <div className="text-3xl md:text-4xl font-bold text-purple-600" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                    {stat.number}
-                  </div>
-                  <div className="text-sm text-slate-600 mt-1">{stat.label}</div>
-                </div>
-              ))}
-            </motion.div>
           </div>
         </div>
       </section>

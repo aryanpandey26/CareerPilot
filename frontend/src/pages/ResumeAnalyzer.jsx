@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Upload, FileText, TrendingUp, CheckCircle2, AlertCircle, ArrowRight, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import axios from "axios";
+import JobMatches from "@/components/JobMatches";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -427,6 +428,18 @@ Experience:
                 </Button>
               </div>
             </Card>
+          </motion.div>
+        )}
+
+        {/* Job matches — shown after analysis */}
+        {result && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.1 }}
+            className="mt-10"
+          >
+            <JobMatches analysis={result} />
           </motion.div>
         )}
       </div>

@@ -69,34 +69,21 @@ export default function Dashboard() {
   }
 
   const avgScore = (() => {
-    // Compute from user's own completed sessions
     let scores = [];
-    try {
-      const ids = JSON.parse(localStorage.getItem("interviewSessionIds") || "[]");
-      for (const s of history || []) {
-        if (!ids.includes(s.id)) continue;
-        for (const a of s.answers || []) {
-          if (typeof a?.evaluation?.overall_score === "number") {
-            scores.push(a.evaluation.overall_score);
-          }
+    for (const s of history || []) {
+      for (const a of s.answers || []) {
+        if (typeof a?.evaluation?.overall_score === "number") {
+          scores.push(a.evaluation.overall_score);
         }
       }
-    } catch (e) {}
+    }
     if (scores.length === 0) return 0;
     return Math.round(scores.reduce((s, x) => s + x, 0) / scores.length);
   })();
-  let mySessionIds = [];
-  try {
-    mySessionIds = JSON.parse(localStorage.getItem("interviewSessionIds") || "[]");
-  } catch (e) {
-    mySessionIds = [];
-  }
   const completedHistory = (history || []).filter(
-    (s) =>
-      mySessionIds.includes(s.id) &&
-      (s.answers || []).length > 0 &&
-      s.evaluated_at
+    (s) => (s.answers || []).length > 0 && s.evaluated_at
   );
+  // Backend already filters /api/analytics/history to the current authenticated user.
 
   return (
     <div
