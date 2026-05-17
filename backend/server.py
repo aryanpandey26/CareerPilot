@@ -1,4 +1,4 @@
-from fastapi import FastAPI, APIRouter, UploadFile, File, HTTPException, Form, Request
+from fastapi import FastAPI, APIRouter, UploadFile, File, HTTPException, Form, Request, Depends
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -8,7 +8,7 @@ from pathlib import Path
 from pydantic import BaseModel, Field, ConfigDict
 from typing import List, Optional, Dict, Any
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 import PyPDF2
 import io
 from emergentintegrations.llm.chat import LlmChat, UserMessage
@@ -921,11 +921,30 @@ def _build_search_url(query: str, location: str, source: str) -> str:
 
 
 @api_router.post("/jobs/recommend")
-async def recommend_jobs(req: JobRecommendationRequest):
-    """Generate two buckets of job recommendations using the LLM:
+async def recommend_jobs(req: JobRecommendationRequest, current_user: dict = Depends(get_current_user)):
+    """Generate two buckets of job recommendations using the LLM.
+
+    Auth required (prevents anonymous LLM abuse).
+    Rate limit: 5 requests / user / hour.
     1) 'current_match' — roles the candidate can apply for today.
     2) 'stretch'       — roles unlocked if they add the listed missing skills.
     """
+    # ---- Rate limit (5/h per user) ----
+    one_hour_ago = datetime.now(timezone.utc) - timedelta(hours=1)
+    recent_count = await db.jobs_recommend_calls.count_documents({
+        "user_id": current_user["user_id"],
+        "created_at": {"$gte": one_hour_ago},
+    })
+    if recent_count >= 5:
+        raise HTTPException(
+            status_code=429,
+            detail="Rate limit exceeded: 5 job-recommendation requests per hour. Try again later.",
+        )
+    await db.jobs_recommend_calls.insert_one({
+        "user_id": current_user["user_id"],
+        "created_at": datetime.now(timezone.utc),
+    })
+
     try:
         prompt = f"""You are a senior tech recruiter for the Indian and global markets.
 
@@ -1016,6 +1035,16 @@ app.mount("/api/videos", StaticFiles(directory=str(VIDEO_UPLOAD_DIR)), name="vid
 set_auth_db(db)
 app.include_router(auth_router)
 app.include_router(api_router)
+
+@app.on_event("startup")
+async def _ensure_indexes():
+    """TTL index — auto-prune rate-limit records after 1 hour."""
+    try:
+        await db.jobs_recommend_calls.create_index(
+            "created_at", expireAfterSeconds=3600
+        )
+    except Exception as e:
+        logging.warning(f"Could not create TTL index: {e}")
 
 app.add_middleware(
     CORSMiddleware,

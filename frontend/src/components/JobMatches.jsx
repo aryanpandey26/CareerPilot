@@ -39,7 +39,17 @@ export default function JobMatches({ analysis, jobTitle = "", experienceLevel = 
       setData(res.data);
     } catch (err) {
       console.error("Job-recommend error:", err);
-      toast.error("Couldn't fetch job recommendations. Try again.");
+      const status = err?.response?.status;
+      if (status === 401) {
+        toast.error("Please sign in to see job matches.");
+      } else if (status === 429) {
+        toast.error(
+          err?.response?.data?.detail ||
+            "You're going fast — try again in a bit (limit: 5/hour)."
+        );
+      } else {
+        toast.error("Couldn't fetch job recommendations. Try again.");
+      }
     } finally {
       setLoading(false);
     }
