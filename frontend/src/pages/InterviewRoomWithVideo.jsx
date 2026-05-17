@@ -102,10 +102,10 @@ export default function InterviewRoomWithVideo() {
         },
       ]);
 
-      if (newCount >= 2) {
+      if (newCount >= 3) {
         cheatingCancelledRef.current = true;
         setWarningMessage(
-          "Interview Cancelled! You have exceeded the maximum number of warnings (2/2)."
+          "Interview Cancelled! You have exceeded the maximum number of warnings (3/3)."
         );
         setShowWarningModal(true);
         setTimeout(() => {
@@ -113,8 +113,13 @@ export default function InterviewRoomWithVideo() {
           navigate("/dashboard");
         }, 2000);
       } else {
+        const remaining = 3 - newCount;
         setWarningMessage(
-          `Warning ${newCount}/2: ${suffix} One more violation will cancel your interview.`
+          `Warning ${newCount}/3: ${suffix} ${
+            remaining === 1
+              ? "One more violation will cancel your interview."
+              : `${remaining} more violations will cancel your interview.`
+          }`
         );
         setShowWarningModal(true);
       }
@@ -682,7 +687,7 @@ export default function InterviewRoomWithVideo() {
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-slate-400">Warnings:</span>
                   <span className={`font-semibold ${cheatingWarnings > 0 ? 'text-red-400' : 'text-green-400'}`}>
-                    {cheatingWarnings}/2
+                    {cheatingWarnings}/3
                   </span>
                 </div>
               </div>
@@ -697,7 +702,7 @@ export default function InterviewRoomWithVideo() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-red-400">
               <AlertTriangle className="h-6 w-6" />
-              Warning {cheatingWarnings}/2
+              Warning {cheatingWarnings}/3
             </DialogTitle>
             <DialogDescription className="text-slate-300 text-base mt-4">
               {warningMessage}
@@ -705,9 +710,11 @@ export default function InterviewRoomWithVideo() {
           </DialogHeader>
           <div className="mt-6">
             <p className="text-sm text-slate-400 mb-4">
-              {cheatingWarnings >= 2 
+              {cheatingWarnings >= 3
                 ? "Your interview will be cancelled due to multiple violations."
-                : "One more warning will result in interview cancellation."}
+                : cheatingWarnings === 2
+                ? "One more warning will result in interview cancellation."
+                : "You will receive one more warning before the interview is cancelled."}
             </p>
             <Button
               onClick={() => setShowWarningModal(false)}

@@ -356,13 +356,7 @@ export default function ResultsPage() {
                     </div>
                   )}
 
-                  {/* Model Answer */}
-                  {evaluation.model_answer && (
-                    <div className="bg-slate-900/60 rounded-lg p-4 mt-4 border border-purple-500/10">
-                      <p className="text-sm font-semibold text-purple-200 mb-2">Model Answer:</p>
-                      <p className="text-sm text-slate-300">{evaluation.model_answer}</p>
-                    </div>
-                  )}
+                  {/* Model answer hidden per product spec */}
                 </Card>
               </motion.div>
             );
