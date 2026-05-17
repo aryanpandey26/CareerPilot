@@ -32,6 +32,14 @@ export default function AuthCallback() {
           { session_id: sessionId },
           { withCredentials: true }
         );
+        // Wipe any stale JWT from a prior email/password session
+        try {
+          localStorage.removeItem("authToken");
+          delete axios.defaults.headers.common["Authorization"];
+        } catch (e) {}
+        // IMPORTANT: strip the #session_id=... fragment BEFORE refreshing so
+        // the AuthContext.checkAuth() early-skip doesn't bail out.
+        window.history.replaceState({}, "", window.location.pathname);
         await refresh();
         toast.success("Signed in with Google");
         navigate("/dashboard", { replace: true });

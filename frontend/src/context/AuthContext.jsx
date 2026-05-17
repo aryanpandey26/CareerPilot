@@ -20,9 +20,14 @@ export function AuthProvider({ children }) {
     axios.defaults.withCredentials = true;
   }, []);
 
-  const checkAuth = useCallback(async () => {
+  const checkAuth = useCallback(async ({ force = false } = {}) => {
     // Skip when returning from Google OAuth — AuthCallback will resolve.
-    if (typeof window !== "undefined" && window.location.hash?.includes("session_id=")) {
+    // (Forced calls bypass this so /auth/callback can refresh after the exchange.)
+    if (
+      !force &&
+      typeof window !== "undefined" &&
+      window.location.hash?.includes("session_id=")
+    ) {
       setLoading(false);
       return;
     }
@@ -39,6 +44,9 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     checkAuth();
   }, [checkAuth]);
+
+  // Public refresh that always hits /me
+  const refresh = useCallback(() => checkAuth({ force: true }), [checkAuth]);
 
   const login = async (email, password) => {
     const { data } = await axios.post(`${API}/auth/login`, { email, password });
@@ -75,7 +83,7 @@ export function AuthProvider({ children }) {
     setUser(null);
   };
 
-  const value = { user, loading, login, register, loginWithGoogle, logout, refresh: checkAuth };
+  const value = { user, loading, login, register, loginWithGoogle, logout, refresh };
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
