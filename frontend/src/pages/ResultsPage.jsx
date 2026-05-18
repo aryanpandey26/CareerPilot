@@ -160,7 +160,7 @@ export default function ResultsPage() {
                         </p>
                         <ul className="text-sm text-slate-300 list-disc pl-5 space-y-1">
                           {deepCheat.multiple_voice_indicators.map((m, i) => (
-                            <li key={i}>{m}</li>
+                            <li key={`mvi-${i}-${m?.slice?.(0, 24)}`}>{m}</li>
                           ))}
                         </ul>
                       </div>
@@ -172,7 +172,7 @@ export default function ResultsPage() {
                         </p>
                         <ul className="text-sm text-slate-300 list-disc pl-5 space-y-1">
                           {deepCheat.gaze_drift_indicators.map((m, i) => (
-                            <li key={i}>{m}</li>
+                            <li key={`gdi-${i}-${m?.slice?.(0, 24)}`}>{m}</li>
                           ))}
                         </ul>
                       </div>
@@ -184,7 +184,7 @@ export default function ResultsPage() {
                         </p>
                         <ul className="text-sm text-slate-300 list-disc pl-5 space-y-1">
                           {deepCheat.scripted_answer_indicators.map((m, i) => (
-                            <li key={i}>{m}</li>
+                            <li key={`sai-${i}-${m?.slice?.(0, 24)}`}>{m}</li>
                           ))}
                         </ul>
                       </div>
@@ -196,7 +196,7 @@ export default function ResultsPage() {
                         </p>
                         <ul className="text-sm text-slate-300 list-disc pl-5 space-y-1">
                           {deepCheat.transcript_text_mismatch.map((m, i) => (
-                            <li key={i}>{m}</li>
+                            <li key={`ttm-${i}-${m?.slice?.(0, 24)}`}>{m}</li>
                           ))}
                         </ul>
                       </div>
@@ -210,7 +210,7 @@ export default function ResultsPage() {
                       </p>
                       <ul className="text-sm text-slate-300 list-disc pl-5 space-y-1">
                         {deepCheat.recommendations.map((r, i) => (
-                          <li key={i}>{r}</li>
+                          <li key={`rec-${i}-${r?.slice?.(0, 24)}`}>{r}</li>
                         ))}
                       </ul>
                     </div>
@@ -260,7 +260,7 @@ export default function ResultsPage() {
             const evaluation = answer.evaluation || {};
             return (
               <motion.div
-                key={idx}
+                key={`q-${answer.question_index ?? idx}`}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: idx * 0.1 }}
@@ -333,7 +333,7 @@ export default function ResultsPage() {
                       <p className="text-sm font-semibold text-emerald-300 mb-1">Strengths:</p>
                       <ul className="text-sm text-slate-300 space-y-1">
                         {evaluation.strengths.map((s, i) => (
-                          <li key={i} className="flex items-start gap-1">
+                          <li key={`s-${i}-${s?.slice?.(0, 24)}`} className="flex items-start gap-1">
                             <span className="text-emerald-300">✓</span>
                             <span>{s}</span>
                           </li>
@@ -347,7 +347,7 @@ export default function ResultsPage() {
                       <p className="text-sm font-semibold text-rose-300 mb-1">Areas to Improve:</p>
                       <ul className="text-sm text-slate-300 space-y-1">
                         {evaluation.weaknesses.map((w, i) => (
-                          <li key={i} className="flex items-start gap-1">
+                          <li key={`w-${i}-${w?.slice?.(0, 24)}`} className="flex items-start gap-1">
                             <span className="text-rose-300">•</span>
                             <span>{w}</span>
                           </li>

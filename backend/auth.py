@@ -68,7 +68,8 @@ def _hash_password(plain: str) -> str:
 def _verify_password(plain: str, hashed: str) -> bool:
     try:
         return bcrypt.checkpw(plain.encode("utf-8"), hashed.encode("utf-8"))
-    except Exception:
+    except Exception as e:  # malformed hash, encoding issue, etc.
+        logging.warning(f"bcrypt verify error: {e}")
         return False
 
 
@@ -184,6 +185,7 @@ async def login(req: LoginRequest):
 @router.post("/google-session")
 async def google_session(req: GoogleSessionRequest, response: Response):
     """Exchange the Emergent OAuth session_id for an internal session."""
+    data: dict = {}
     try:
         async with httpx.AsyncClient(timeout=15) as client:
             r = await client.get(
@@ -192,12 +194,15 @@ async def google_session(req: GoogleSessionRequest, response: Response):
             )
         if r.status_code != 200:
             raise HTTPException(status_code=401, detail="Invalid OAuth session")
-        data = r.json()
+        data = r.json() or {}
     except HTTPException:
         raise
     except Exception as e:
         logging.error(f"Google session exchange failed: {e}")
         raise HTTPException(status_code=500, detail="OAuth exchange failed")
+
+    if not isinstance(data, dict):
+        raise HTTPException(status_code=502, detail="Malformed OAuth response")
 
     email = (data.get("email") or "").lower()
     if not email:

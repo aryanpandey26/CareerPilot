@@ -36,7 +36,12 @@ export default function AuthCallback() {
         try {
           localStorage.removeItem("authToken");
           delete axios.defaults.headers.common["Authorization"];
-        } catch (e) {}
+        } catch (e) {
+          // eslint-disable-next-line no-console
+          if (process.env.NODE_ENV !== "production") {
+            console.warn("Could not clear stale auth header:", e);
+          }
+        }
         // IMPORTANT: strip the #session_id=... fragment BEFORE refreshing so
         // the AuthContext.checkAuth() early-skip doesn't bail out.
         window.history.replaceState({}, "", window.location.pathname);

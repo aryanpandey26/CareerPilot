@@ -231,7 +231,7 @@ export default function JobMatches({ analysis, jobTitle = "", experienceLevel = 
                     <div className="flex flex-wrap gap-2">
                       {job.missing_skills_needed.map((s, i) => (
                         <span
-                          key={i}
+                          key={`miss-${i}-${s}`}
                           className="px-2.5 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-pink-500/20 to-purple-500/20 border border-pink-400/30 text-pink-100"
                         >
                           + {s}
@@ -249,7 +249,7 @@ export default function JobMatches({ analysis, jobTitle = "", experienceLevel = 
                     <div className="flex flex-wrap gap-2">
                       {job.key_skills_used.slice(0, 6).map((s, i) => (
                         <span
-                          key={i}
+                          key={`used-${i}-${s}`}
                           className="px-2.5 py-1 rounded-full text-xs font-medium bg-purple-500/15 border border-purple-400/30 text-purple-100"
                         >
                           {s}

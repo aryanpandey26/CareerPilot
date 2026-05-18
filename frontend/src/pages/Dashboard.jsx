@@ -208,7 +208,7 @@ export default function Dashboard() {
                 <div className="space-y-3">
                   {analytics.strong_areas.map((area, idx) => (
                     <div
-                      key={idx}
+                      key={`strong-${idx}-${area}`}
                       className="flex items-start gap-3 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg"
                     >
                       <span className="text-emerald-300 font-bold">✓</span>
@@ -236,7 +236,7 @@ export default function Dashboard() {
                 <div className="space-y-3">
                   {analytics.weak_areas.map((area, idx) => (
                     <div
-                      key={idx}
+                      key={`weak-${idx}-${area}`}
                       className="flex items-start gap-3 p-3 bg-rose-500/10 border border-rose-500/20 rounded-lg"
                     >
                       <span className="text-rose-300 font-bold">•</span>
@@ -268,7 +268,7 @@ export default function Dashboard() {
               <div className="flex flex-wrap gap-3">
                 {analytics.recommended_focus_topics.map((topic, idx) => (
                   <span
-                    key={idx}
+                    key={`topic-${idx}-${topic}`}
                     className="px-4 py-2 bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-400/30 text-purple-100 rounded-lg font-medium"
                   >
                     {topic}

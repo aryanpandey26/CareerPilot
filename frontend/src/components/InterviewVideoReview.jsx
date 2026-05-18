@@ -57,7 +57,10 @@ export default function InterviewVideoReview({ videoRecordings, cheatingAnalysis
                   <p className="text-sm font-semibold text-slate-700 mb-2">Detected Events:</p>
                   <div className="space-y-2">
                     {cheatingAnalysis.cheating_events.map((event, idx) => (
-                      <div key={idx} className="flex items-start gap-2 text-sm">
+                      <div
+                        key={`ce-${idx}-${event.timestamp || event.type}`}
+                        className="flex items-start gap-2 text-sm"
+                      >
                         <span className="text-orange-600">•</span>
                         <div>
                           <span className="font-semibold">{event.type}</span>
@@ -82,7 +85,7 @@ export default function InterviewVideoReview({ videoRecordings, cheatingAnalysis
         <div className="grid md:grid-cols-2 gap-6">
           {videoRecordings.map((recording, idx) => (
             <motion.div
-              key={idx}
+              key={`rec-${recording.timestamp || idx}-q${recording.questionIndex}`}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: idx * 0.1 }}

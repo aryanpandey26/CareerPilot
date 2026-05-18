@@ -295,7 +295,7 @@ Experience:
                         <div className="flex flex-wrap gap-2">
                           {result.matching_skills.map((skill, idx) => (
                             <span
-                              key={idx}
+                              key={`ms-${idx}-${skill}`}
                               className="px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-full text-sm font-semibold shadow-md"
                             >
                               {skill}
@@ -319,7 +319,7 @@ Experience:
                         <div className="flex flex-wrap gap-2">
                           {result.missing_skills.map((skill, idx) => (
                             <span
-                              key={idx}
+                              key={`mis-${idx}-${skill}`}
                               className="px-4 py-2 bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-full text-sm font-semibold shadow-md"
                             >
                               {skill}
@@ -383,7 +383,7 @@ Experience:
                 <div className="space-y-4 w-full">
                   {result.improvement_suggestions.map((suggestion, idx) => (
                     <motion.div
-                      key={idx}
+                      key={`sug-${idx}-${suggestion?.slice?.(0, 24)}`}
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ duration: 0.4, delay: idx * 0.08 }}

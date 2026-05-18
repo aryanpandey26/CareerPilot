@@ -75,8 +75,12 @@ export function AuthProvider({ children }) {
   const logout = async () => {
     try {
       await axios.post(`${API}/auth/logout`);
-    } catch {
-      // ignore
+    } catch (err) {
+      // Server-side logout failed but we still clear client state.
+      // eslint-disable-next-line no-console
+      if (process.env.NODE_ENV !== "production") {
+        console.warn("Logout call failed:", err?.message || err);
+      }
     }
     localStorage.removeItem("authToken");
     delete axios.defaults.headers.common["Authorization"];

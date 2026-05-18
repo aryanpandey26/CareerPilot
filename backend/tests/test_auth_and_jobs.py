@@ -180,7 +180,7 @@ class TestAnalyticsHistoryIsolation:
 
 # ---------- /api/jobs/recommend ----------
 class TestJobsRecommend:
-    def test_recommend_two_buckets_with_apply_links(self, s):
+    def test_recommend_two_buckets_with_apply_links(self, s, user_a):
         payload = {
             "matching_skills": ["React", "TypeScript", "Node.js", "REST APIs"],
             "missing_skills": ["Kubernetes", "AWS", "System Design"],
@@ -189,7 +189,12 @@ class TestJobsRecommend:
             "location": "Bengaluru",
         }
         # LLM call can take 30-90s — treat 200 as success regardless of latency.
-        r = s.post(f"{API}/jobs/recommend", json=payload, timeout=180)
+        r = s.post(
+            f"{API}/jobs/recommend",
+            json=payload,
+            headers=auth_headers(user_a),
+            timeout=180,
+        )
         assert r.status_code == 200, r.text
         body = r.json()
         for bucket in ("current_match", "stretch"):
