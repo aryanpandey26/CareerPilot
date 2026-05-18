@@ -1038,10 +1038,13 @@ app.include_router(api_router)
 
 @app.on_event("startup")
 async def _ensure_indexes():
-    """TTL index — auto-prune rate-limit records after 1 hour."""
+    """TTL indexes to auto-prune ephemeral records."""
     try:
         await db.jobs_recommend_calls.create_index(
             "created_at", expireAfterSeconds=3600
+        )
+        await db.oauth_states.create_index(
+            "created_at", expireAfterSeconds=600
         )
     except Exception as e:
         logging.warning(f"Could not create TTL index: {e}")

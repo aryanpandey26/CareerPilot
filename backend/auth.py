@@ -23,9 +23,15 @@ import logging
 
 load_dotenv(Path(__file__).parent / ".env")
 JWT_SECRET = os.environ["JWT_SECRET"]
+GOOGLE_CLIENT_ID = os.environ["GOOGLE_CLIENT_ID"]
+GOOGLE_CLIENT_SECRET = os.environ["GOOGLE_CLIENT_SECRET"]
+GOOGLE_REDIRECT_URI = os.environ["GOOGLE_REDIRECT_URI"]
+FRONTEND_URL = os.environ["FRONTEND_URL"]
 JWT_ALGORITHM = "HS256"
 JWT_EXPIRY_DAYS = 7
-EMERGENT_SESSION_URL = "https://demobackend.emergentagent.com/auth/v1/env/oauth/session-data"
+GOOGLE_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth"
+GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token"
+GOOGLE_USERINFO_URL = "https://www.googleapis.com/oauth2/v3/userinfo"
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
@@ -182,41 +188,107 @@ async def login(req: LoginRequest):
     }
 
 
-@router.post("/google-session")
-async def google_session(req: GoogleSessionRequest, response: Response):
-    """Exchange the Emergent OAuth session_id for an internal session."""
-    data: dict = {}
+@router.get("/google/login")
+async def google_login():
+    """Kick off the direct Google OAuth2 flow."""
+    import urllib.parse
+    state = uuid.uuid4().hex
+    params = {
+        "client_id": GOOGLE_CLIENT_ID,
+        "redirect_uri": GOOGLE_REDIRECT_URI,
+        "response_type": "code",
+        "scope": "openid email profile",
+        "access_type": "online",
+        "prompt": "select_account",
+        "state": state,
+    }
+    # Persist state for CSRF protection (10 min TTL)
+    await _db.oauth_states.insert_one({
+        "state": state,
+        "created_at": datetime.now(timezone.utc),
+    })
+    url = f"{GOOGLE_AUTH_URL}?{urllib.parse.urlencode(params)}"
+    from fastapi.responses import RedirectResponse
+    return RedirectResponse(url=url, status_code=302)
+
+
+@router.get("/google/callback")
+async def google_callback(code: str = "", state: str = "", error: str = ""):
+    """Handle Google's redirect: exchange code → fetch profile → set cookie → forward to FE."""
+    from fastapi.responses import RedirectResponse
+
+    if error or not code or not state:
+        return RedirectResponse(
+            url=f"{FRONTEND_URL}/login?error=google_auth_failed",
+            status_code=302,
+        )
+
+    # Verify state (CSRF + replay)
+    state_doc = await _db.oauth_states.find_one_and_delete({"state": state})
+    if not state_doc:
+        return RedirectResponse(
+            url=f"{FRONTEND_URL}/login?error=invalid_state",
+            status_code=302,
+        )
+
+    # 1) Exchange code for tokens
     try:
         async with httpx.AsyncClient(timeout=15) as client:
-            r = await client.get(
-                EMERGENT_SESSION_URL,
-                headers={"X-Session-ID": req.session_id},
+            token_resp = await client.post(
+                GOOGLE_TOKEN_URL,
+                data={
+                    "code": code,
+                    "client_id": GOOGLE_CLIENT_ID,
+                    "client_secret": GOOGLE_CLIENT_SECRET,
+                    "redirect_uri": GOOGLE_REDIRECT_URI,
+                    "grant_type": "authorization_code",
+                },
+                headers={"Accept": "application/json"},
             )
-        if r.status_code != 200:
-            raise HTTPException(status_code=401, detail="Invalid OAuth session")
-        data = r.json() or {}
-    except HTTPException:
-        raise
+        if token_resp.status_code != 200:
+            logging.error(f"Google token exchange failed: {token_resp.text}")
+            return RedirectResponse(
+                url=f"{FRONTEND_URL}/login?error=token_exchange_failed",
+                status_code=302,
+            )
+        tokens = token_resp.json()
+        access_token = tokens.get("access_token")
+
+        # 2) Fetch user profile
+        async with httpx.AsyncClient(timeout=15) as client:
+            user_resp = await client.get(
+                GOOGLE_USERINFO_URL,
+                headers={"Authorization": f"Bearer {access_token}"},
+            )
+        if user_resp.status_code != 200:
+            return RedirectResponse(
+                url=f"{FRONTEND_URL}/login?error=profile_fetch_failed",
+                status_code=302,
+            )
+        profile = user_resp.json()
     except Exception as e:
-        logging.error(f"Google session exchange failed: {e}")
-        raise HTTPException(status_code=500, detail="OAuth exchange failed")
+        logging.error(f"Google OAuth error: {e}")
+        return RedirectResponse(
+            url=f"{FRONTEND_URL}/login?error=oauth_exception",
+            status_code=302,
+        )
 
-    if not isinstance(data, dict):
-        raise HTTPException(status_code=502, detail="Malformed OAuth response")
-
-    email = (data.get("email") or "").lower()
+    email = (profile.get("email") or "").lower()
     if not email:
-        raise HTTPException(status_code=400, detail="No email in OAuth response")
+        return RedirectResponse(
+            url=f"{FRONTEND_URL}/login?error=no_email",
+            status_code=302,
+        )
 
+    # 3) Upsert user
     existing = await _db.users.find_one({"email": email}, {"_id": 0})
     if existing:
         user_id = existing["user_id"]
-        # Refresh name/picture
         await _db.users.update_one(
             {"user_id": user_id},
             {"$set": {
-                "name": data.get("name", existing.get("name", "")),
-                "picture": data.get("picture", existing.get("picture", "")),
+                "name": profile.get("name", existing.get("name", "")),
+                "picture": profile.get("picture", existing.get("picture", "")),
                 "auth_provider": "google",
             }},
         )
@@ -225,44 +297,34 @@ async def google_session(req: GoogleSessionRequest, response: Response):
         await _db.users.insert_one({
             "user_id": user_id,
             "email": email,
-            "name": data.get("name", email.split("@")[0]),
-            "picture": data.get("picture", ""),
+            "name": profile.get("name", email.split("@")[0]),
+            "picture": profile.get("picture", ""),
             "auth_provider": "google",
             "created_at": datetime.now(timezone.utc),
         })
 
-    session_token = data["session_token"]
-    expires_at = datetime.now(timezone.utc) + timedelta(days=7)
-    await _db.user_sessions.update_one(
-        {"session_token": session_token},
-        {"$set": {
-            "user_id": user_id,
-            "session_token": session_token,
-            "expires_at": expires_at,
-            "created_at": datetime.now(timezone.utc),
-        }},
-        upsert=True,
-    )
+    # 4) Create internal session
+    session_token = uuid.uuid4().hex
+    expires_at = datetime.now(timezone.utc) + timedelta(days=JWT_EXPIRY_DAYS)
+    await _db.user_sessions.insert_one({
+        "user_id": user_id,
+        "session_token": session_token,
+        "expires_at": expires_at,
+        "created_at": datetime.now(timezone.utc),
+    })
 
+    # 5) Redirect to FE with cookie set
+    response = RedirectResponse(url=f"{FRONTEND_URL}/dashboard", status_code=302)
     response.set_cookie(
         key="session_token",
         value=session_token,
-        max_age=7 * 24 * 60 * 60,
+        max_age=JWT_EXPIRY_DAYS * 24 * 60 * 60,
         httponly=True,
         secure=True,
         samesite="none",
         path="/",
     )
-
-    return {
-        "user": PublicUser(
-            user_id=user_id,
-            email=email,
-            name=data.get("name", ""),
-            picture=data.get("picture", ""),
-            auth_provider="google",
-        ).model_dump()
-    }
+    return response
 
 
 @router.get("/me")

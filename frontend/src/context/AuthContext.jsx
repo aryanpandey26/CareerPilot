@@ -20,17 +20,7 @@ export function AuthProvider({ children }) {
     axios.defaults.withCredentials = true;
   }, []);
 
-  const checkAuth = useCallback(async ({ force = false } = {}) => {
-    // Skip when returning from Google OAuth — AuthCallback will resolve.
-    // (Forced calls bypass this so /auth/callback can refresh after the exchange.)
-    if (
-      !force &&
-      typeof window !== "undefined" &&
-      window.location.hash?.includes("session_id=")
-    ) {
-      setLoading(false);
-      return;
-    }
+  const checkAuth = useCallback(async () => {
     try {
       const { data } = await axios.get(`${API}/auth/me`);
       setUser(data);
@@ -46,7 +36,7 @@ export function AuthProvider({ children }) {
   }, [checkAuth]);
 
   // Public refresh that always hits /me
-  const refresh = useCallback(() => checkAuth({ force: true }), [checkAuth]);
+  const refresh = useCallback(() => checkAuth(), [checkAuth]);
 
   const login = async (email, password) => {
     const { data } = await axios.post(`${API}/auth/login`, { email, password });
@@ -65,11 +55,9 @@ export function AuthProvider({ children }) {
   };
 
   const loginWithGoogle = () => {
-    // REMINDER: DO NOT HARDCODE THE URL, OR ADD ANY FALLBACKS OR REDIRECT URLS, THIS BREAKS THE AUTH
-    // Send the user back to /auth/callback — that page reads the #session_id= fragment,
-    // posts it to /api/auth/google-session, and then forwards to /dashboard.
-    const redirectUrl = window.location.origin + "/auth/callback";
-    window.location.href = `https://auth.emergentagent.com/?redirect=${encodeURIComponent(redirectUrl)}`;
+    // Backend handles the entire OAuth dance: /api/auth/google/login → Google →
+    // /api/auth/google/callback (sets cookie) → 302 to /dashboard.
+    window.location.href = `${API}/auth/google/login`;
   };
 
   const logout = async () => {

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -18,6 +18,25 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  // Show toast if backend redirected here with ?error=...
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const err = params.get("error");
+    if (err) {
+      const map = {
+        google_auth_failed: "Google sign-in was cancelled or failed.",
+        invalid_state: "Session expired. Please try signing in again.",
+        token_exchange_failed: "Couldn't verify with Google. Try again.",
+        profile_fetch_failed: "Couldn't fetch your Google profile.",
+        no_email: "Google didn't share an email with us.",
+        oauth_exception: "Unexpected sign-in error. Try again.",
+      };
+      toast.error(map[err] || "Sign-in error.");
+      // Clean the URL so reload doesn't re-toast
+      navigate("/login", { replace: true });
+    }
+  }, [location.search, navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
