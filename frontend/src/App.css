@@ -14,54 +14,18 @@ button:active {
   transform: scale(0.95);
 }
 
-/* Ensure Emergent badge is always visible and styled correctly */
-#emergent-badge {
-  display: inline-flex !important;
-  box-sizing: border-box;
-  width: 178px !important;
-  height: 40px !important;
-  padding: 8px 12px !important;
-  align-items: center !important;
-  justify-content: center !important;
-  gap: 8px !important;
-  border-radius: 50px !important;
-  background: #000 !important;
-  position: fixed !important;
-  bottom: 16px !important;
-  right: 16px !important;
-  text-decoration: none !important;
-  z-index: 99999 !important;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
-  overflow: hidden !important;
-  border: none !important;
-}
-
-#emergent-badge:hover {
-  transform: scale(1.05);
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2) !important;
-}
-
-#emergent-badge p {
-  color: #FFF !important;
-  font-family: 'Poppins', 'Inter', sans-serif !important;
-  font-size: 13px !important;
-  font-weight: 600 !important;
-  margin: 0 !important;
-  padding: 0 !important;
-  white-space: nowrap !important;
-  line-height: 1 !important;
-}
-
-#emergent-badge svg {
-  flex-shrink: 0 !important;
-  width: 20px !important;
-  height: 20px !important;
-}
-
-/* Hide any potential white backgrounds near badge */
-#emergent-badge::before,
-#emergent-badge::after {
+/* Hide the Emergent badge if it ever gets re-injected by platform scripts */
+#emergent-badge,
+a[href*="emergent.sh"][id*="badge"],
+a[href*="app.emergent.sh"] {
   display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  position: absolute !important;
+  left: -9999px !important;
+  width: 0 !important;
+  height: 0 !important;
 }
 
 /* Remove any white containers at bottom right */
