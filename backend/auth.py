@@ -314,7 +314,7 @@ async def google_callback(code: str = "", state: str = "", error: str = ""):
     })
 
     # 5) Redirect to FE with cookie set
-    response = RedirectResponse(url=f"{FRONTEND_URL}/dashboard", status_code=302)
+    response = RedirectResponse(url=f"{FRONTEND_URL}/home", status_code=302)
     response.set_cookie(
         key="session_token",
         value=session_token,

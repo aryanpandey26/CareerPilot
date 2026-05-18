@@ -27,7 +27,7 @@ export default function SignupPage() {
     try {
       await register(email, password, name);
       toast.success("Account created!");
-      navigate("/dashboard", { replace: true });
+      navigate("/home", { replace: true });
     } catch (err) {
       toast.error(err?.response?.data?.detail || "Signup failed");
     } finally {

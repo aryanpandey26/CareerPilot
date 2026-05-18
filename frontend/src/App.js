@@ -69,6 +69,14 @@ function AppContent() {
             </ProtectedRoute>
           }
         />
+        <Route
+          path="/home"
+          element={
+            <ProtectedRoute>
+              <Dashboard />
+            </ProtectedRoute>
+          }
+        />
       </Routes>
     </>
   );

@@ -376,7 +376,7 @@ export default function ResultsPage() {
           </Button>
           <Button
             data-testid="dashboard-btn"
-            onClick={() => navigate("/dashboard")}
+            onClick={() => navigate("/home")}
             className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-8 py-6 text-lg shadow-lg"
           >
             <BarChart3 className="mr-2 h-5 w-5" />

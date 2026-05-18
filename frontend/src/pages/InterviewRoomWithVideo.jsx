@@ -116,7 +116,7 @@ export default function InterviewRoomWithVideo() {
         setShowWarningModal(true);
         setTimeout(() => {
           toast.error("Interview cancelled due to repeated violations");
-          navigate("/dashboard");
+          navigate("/home");
         }, 2000);
       } else {
         const remaining = 3 - newCount;

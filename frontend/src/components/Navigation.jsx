@@ -60,8 +60,8 @@ export const Navigation = () => {
 
             <Button
               data-testid="nav-dashboard-btn"
-              onClick={() => navigate("/dashboard")}
-              variant={isActive("/dashboard") ? "default" : "ghost"}
+              onClick={() => navigate("/home")}
+              variant={isActive("/home") || isActive("/dashboard") ? "default" : "ghost"}
               className="gap-2 font-medium"
               style={{ fontFamily: "Inter, sans-serif" }}
             >

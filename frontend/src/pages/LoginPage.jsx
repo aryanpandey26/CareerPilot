@@ -13,7 +13,7 @@ export default function LoginPage() {
   const { login, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const next = location.state?.from || "/dashboard";
+  const next = location.state?.from || "/home";
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
