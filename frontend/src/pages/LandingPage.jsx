@@ -25,7 +25,7 @@ export default function LandingPage() {
             style={{ fontFamily: "Poppins, sans-serif" }}
             onClick={() => navigate("/")}
           >
-            Interview AI
+            CareerPilot
           </div>
 
           <div className="flex items-center gap-2 sm:gap-3">

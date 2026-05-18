@@ -58,7 +58,7 @@ export default function LoginPage() {
             <h1 className="text-3xl sm:text-4xl font-bold text-white">
               Sign in to{" "}
               <span className="bg-gradient-to-r from-purple-300 via-pink-300 to-purple-400 bg-clip-text text-transparent">
-                Interview AI
+                CareerPilot
               </span>
             </h1>
             <p className="text-slate-400 text-sm mt-2">Continue your interview prep journey.</p>

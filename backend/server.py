@@ -135,7 +135,7 @@ async def call_llm(prompt: str, system_message: str = "You are a professional AI
 # API Routes
 @api_router.get("/")
 async def root():
-    return {"message": "AI Interview Engine API"}
+    return {"message": "CareerPilot API"}
 
 class ResumeAnalysisRequest(BaseModel):
     resume_text: str

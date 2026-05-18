@@ -30,7 +30,7 @@ export const Navigation = () => {
               className="text-2xl font-bold text-primary"
               style={{ fontFamily: "Poppins, sans-serif" }}
             >
-              Interview AI
+              CareerPilot
             </div>
           </div>
 
