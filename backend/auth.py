@@ -25,8 +25,8 @@ load_dotenv(Path(__file__).parent / ".env")
 JWT_SECRET = os.environ["JWT_SECRET"]
 GOOGLE_CLIENT_ID = os.environ["GOOGLE_CLIENT_ID"]
 GOOGLE_CLIENT_SECRET = os.environ["GOOGLE_CLIENT_SECRET"]
-GOOGLE_REDIRECT_URI = os.environ["GOOGLE_REDIRECT_URI"]
-FRONTEND_URL = os.environ["FRONTEND_URL"]
+# GOOGLE_REDIRECT_URI and FRONTEND_URL are derived from the incoming request's
+# origin at runtime, so the same code works on preview AND production.
 JWT_ALGORITHM = "HS256"
 JWT_EXPIRY_DAYS = 7
 GOOGLE_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth"
@@ -189,22 +189,29 @@ async def login(req: LoginRequest):
 
 
 @router.get("/google/login")
-async def google_login():
-    """Kick off the direct Google OAuth2 flow."""
+async def google_login(request: Request):
+    """Kick off the direct Google OAuth2 flow.
+
+    Auto-detects the callback host from the incoming request so this works on
+    BOTH preview and production without env changes.
+    """
     import urllib.parse
     state = uuid.uuid4().hex
+    # Build callback URL from this request's origin (auto-adapts to env)
+    base = str(request.base_url).rstrip("/")
+    callback_url = f"{base}/api/auth/google/callback"
     params = {
         "client_id": GOOGLE_CLIENT_ID,
-        "redirect_uri": GOOGLE_REDIRECT_URI,
+        "redirect_uri": callback_url,
         "response_type": "code",
         "scope": "openid email profile",
         "access_type": "online",
         "prompt": "select_account",
         "state": state,
     }
-    # Persist state for CSRF protection (10 min TTL)
     await _db.oauth_states.insert_one({
         "state": state,
+        "callback_url": callback_url,  # keep for token-exchange step
         "created_at": datetime.now(timezone.utc),
     })
     url = f"{GOOGLE_AUTH_URL}?{urllib.parse.urlencode(params)}"
@@ -213,23 +220,27 @@ async def google_login():
 
 
 @router.get("/google/callback")
-async def google_callback(code: str = "", state: str = "", error: str = ""):
+async def google_callback(request: Request, code: str = "", state: str = "", error: str = ""):
     """Handle Google's redirect: exchange code → fetch profile → set cookie → forward to FE."""
     from fastapi.responses import RedirectResponse
 
+    # Use the current request's origin as the frontend base (env-agnostic)
+    fe_base = str(request.base_url).rstrip("/")
+
     if error or not code or not state:
         return RedirectResponse(
-            url=f"{FRONTEND_URL}/login?error=google_auth_failed",
+            url=f"{fe_base}/login?error=google_auth_failed",
             status_code=302,
         )
 
-    # Verify state (CSRF + replay)
+    # Verify state (CSRF + replay) and fetch the callback_url we used for /login
     state_doc = await _db.oauth_states.find_one_and_delete({"state": state})
     if not state_doc:
         return RedirectResponse(
-            url=f"{FRONTEND_URL}/login?error=invalid_state",
+            url=f"{fe_base}/login?error=invalid_state",
             status_code=302,
         )
+    callback_url = state_doc.get("callback_url") or f"{fe_base}/api/auth/google/callback"
 
     # 1) Exchange code for tokens
     try:
@@ -240,7 +251,7 @@ async def google_callback(code: str = "", state: str = "", error: str = ""):
                     "code": code,
                     "client_id": GOOGLE_CLIENT_ID,
                     "client_secret": GOOGLE_CLIENT_SECRET,
-                    "redirect_uri": GOOGLE_REDIRECT_URI,
+                    "redirect_uri": callback_url,
                     "grant_type": "authorization_code",
                 },
                 headers={"Accept": "application/json"},
@@ -248,7 +259,7 @@ async def google_callback(code: str = "", state: str = "", error: str = ""):
         if token_resp.status_code != 200:
             logging.error(f"Google token exchange failed: {token_resp.text}")
             return RedirectResponse(
-                url=f"{FRONTEND_URL}/login?error=token_exchange_failed",
+                url=f"{fe_base}/login?error=token_exchange_failed",
                 status_code=302,
             )
         tokens = token_resp.json()
@@ -262,21 +273,21 @@ async def google_callback(code: str = "", state: str = "", error: str = ""):
             )
         if user_resp.status_code != 200:
             return RedirectResponse(
-                url=f"{FRONTEND_URL}/login?error=profile_fetch_failed",
+                url=f"{fe_base}/login?error=profile_fetch_failed",
                 status_code=302,
             )
         profile = user_resp.json()
     except Exception as e:
         logging.error(f"Google OAuth error: {e}")
         return RedirectResponse(
-            url=f"{FRONTEND_URL}/login?error=oauth_exception",
+            url=f"{fe_base}/login?error=oauth_exception",
             status_code=302,
         )
 
     email = (profile.get("email") or "").lower()
     if not email:
         return RedirectResponse(
-            url=f"{FRONTEND_URL}/login?error=no_email",
+            url=f"{fe_base}/login?error=no_email",
             status_code=302,
         )
 
@@ -313,8 +324,8 @@ async def google_callback(code: str = "", state: str = "", error: str = ""):
         "created_at": datetime.now(timezone.utc),
     })
 
-    # 5) Redirect to FE with cookie set
-    response = RedirectResponse(url=f"{FRONTEND_URL}/home", status_code=302)
+    # 5) Redirect to FE with cookie set (forward to /home on the SAME origin)
+    response = RedirectResponse(url=f"{fe_base}/home", status_code=302)
     response.set_cookie(
         key="session_token",
         value=session_token,
