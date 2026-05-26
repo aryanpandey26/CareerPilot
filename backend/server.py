@@ -727,7 +727,7 @@ async def transcribe_audio(
 
 
 # ---------- Video Upload & Persistence ----------
-VIDEO_UPLOAD_DIR = Path("/app/backend/uploads/videos")
+VIDEO_UPLOAD_DIR = Path(os.environ.get("VIDEO_UPLOAD_DIR", "/tmp/careerpilot/videos"))
 VIDEO_UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 MAX_VIDEO_MB = 50
 

@@ -1,2 +1,3 @@
-from backend.server import app
-# vercel treats this as an ASGI application entry point 
+from server import app
+
+# Vercel treats this as an ASGI application entry point.
