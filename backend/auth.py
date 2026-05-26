@@ -192,6 +192,16 @@ async def login(req: LoginRequest):
 async def google_login():
     """Kick off the direct Google OAuth2 flow."""
     import urllib.parse
+    from fastapi.responses import RedirectResponse
+
+    if not GOOGLE_CLIENT_ID or not GOOGLE_CLIENT_SECRET or not GOOGLE_REDIRECT_URI or not FRONTEND_URL:
+        logging.error("Google OAuth env vars are incomplete")
+        fallback_url = FRONTEND_URL or "/"
+        return RedirectResponse(
+            url=f"{fallback_url}/login?error=google_oauth_not_configured",
+            status_code=302,
+        )
+
     state = uuid.uuid4().hex
     params = {
         "client_id": GOOGLE_CLIENT_ID,
@@ -203,12 +213,19 @@ async def google_login():
         "state": state,
     }
     # Persist state for CSRF protection (10 min TTL)
-    await _db.oauth_states.insert_one({
-        "state": state,
-        "created_at": datetime.now(timezone.utc),
-    })
+    try:
+        await _db.oauth_states.insert_one({
+            "state": state,
+            "created_at": datetime.now(timezone.utc),
+        })
+    except Exception as e:
+        logging.error(f"Could not save OAuth state: {e}")
+        return RedirectResponse(
+            url=f"{FRONTEND_URL}/login?error=oauth_state_failed",
+            status_code=302,
+        )
+
     url = f"{GOOGLE_AUTH_URL}?{urllib.parse.urlencode(params)}"
-    from fastapi.responses import RedirectResponse
     return RedirectResponse(url=url, status_code=302)
 
 
