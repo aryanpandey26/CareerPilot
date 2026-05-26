@@ -20,6 +20,7 @@ except ImportError:
     OpenAISpeechToText = None
 import json
 import base64
+import httpx
 from auth import router as auth_router, set_db as set_auth_db, get_current_user
 
 ROOT_DIR = Path(__file__).parent
@@ -37,7 +38,8 @@ app = FastAPI()
 api_router = APIRouter(prefix="/api")
 
 # LLM Configuration
-LLM_API_KEY = os.environ.get('EMERGENT_LLM_KEY')
+LLM_API_KEY = os.environ.get('OPENAI_API_KEY') or os.environ.get('EMERGENT_LLM_KEY')
+LLM_MODEL = os.environ.get('OPENAI_MODEL', 'gpt-4o-mini')
 
 # Pydantic Models
 class ATSAnalysisResult(BaseModel):
@@ -123,22 +125,34 @@ def extract_text_from_pdf(file_content: bytes) -> str:
 
 async def call_llm(prompt: str, system_message: str = "You are a professional AI assistant.") -> str:
     """Call LLM with given prompt"""
-    if not LLM_API_KEY or LlmChat is None or UserMessage is None:
+    if not LLM_API_KEY:
         raise HTTPException(
             status_code=503,
-            detail="AI features are not configured on this deployment"
+            detail="AI features are not configured. Set OPENAI_API_KEY in Vercel."
         )
 
     try:
-        chat = LlmChat(
-            api_key=LLM_API_KEY,
-            session_id=str(uuid.uuid4()),
-            system_message=system_message
-        ).with_model("openai", "gpt-5.2")
-        
-        user_message = UserMessage(text=prompt)
-        response = await chat.send_message(user_message)
-        return response
+        async with httpx.AsyncClient(timeout=60) as client:
+            response = await client.post(
+                "https://api.openai.com/v1/chat/completions",
+                headers={
+                    "Authorization": f"Bearer {LLM_API_KEY}",
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "model": LLM_MODEL,
+                    "messages": [
+                        {"role": "system", "content": system_message},
+                        {"role": "user", "content": prompt},
+                    ],
+                },
+            )
+            response.raise_for_status()
+            data = response.json()
+            return data["choices"][0]["message"]["content"]
+    except httpx.HTTPStatusError as e:
+        logging.error(f"OpenAI API error: {e.response.text}")
+        raise HTTPException(status_code=502, detail="AI provider request failed")
     except Exception as e:
         logging.error(f"Error calling LLM: {e}")
         raise HTTPException(status_code=500, detail=f"LLM call failed: {str(e)}")
