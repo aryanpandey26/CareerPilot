@@ -22,11 +22,11 @@ import httpx
 import logging
 
 load_dotenv(Path(__file__).parent / ".env")
-JWT_SECRET = os.environ["JWT_SECRET"]
-GOOGLE_CLIENT_ID = os.environ["GOOGLE_CLIENT_ID"]
-GOOGLE_CLIENT_SECRET = os.environ["GOOGLE_CLIENT_SECRET"]
-GOOGLE_REDIRECT_URI = os.environ["GOOGLE_REDIRECT_URI"]
-FRONTEND_URL = os.environ["FRONTEND_URL"]
+JWT_SECRET = os.environ.get("JWT_SECRET", "change-me-before-production")
+GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", "")
+GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET", "")
+GOOGLE_REDIRECT_URI = os.environ.get("GOOGLE_REDIRECT_URI", "")
+FRONTEND_URL = os.environ.get("FRONTEND_URL", "")
 JWT_ALGORITHM = "HS256"
 JWT_EXPIRY_DAYS = 7
 GOOGLE_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth"
