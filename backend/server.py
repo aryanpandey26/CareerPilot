@@ -11,8 +11,13 @@ import uuid
 from datetime import datetime, timezone, timedelta
 import PyPDF2
 import io
-from emergentintegrations.llm.chat import LlmChat, UserMessage
-from emergentintegrations.llm.openai import OpenAISpeechToText
+try:
+    from emergentintegrations.llm.chat import LlmChat, UserMessage
+    from emergentintegrations.llm.openai import OpenAISpeechToText
+except ImportError:
+    LlmChat = None
+    UserMessage = None
+    OpenAISpeechToText = None
 import json
 import base64
 from auth import router as auth_router, set_db as set_auth_db, get_current_user
@@ -118,6 +123,12 @@ def extract_text_from_pdf(file_content: bytes) -> str:
 
 async def call_llm(prompt: str, system_message: str = "You are a professional AI assistant.") -> str:
     """Call LLM with given prompt"""
+    if not LLM_API_KEY or LlmChat is None or UserMessage is None:
+        raise HTTPException(
+            status_code=503,
+            detail="AI features are not configured on this deployment"
+        )
+
     try:
         chat = LlmChat(
             api_key=LLM_API_KEY,
@@ -691,6 +702,11 @@ async def transcribe_audio(
 
         # Use try/finally to ensure cleanup
         try:
+            if OpenAISpeechToText is None:
+                raise HTTPException(
+                    status_code=503,
+                    detail="Speech-to-text is not configured on this deployment"
+                )
             stt = OpenAISpeechToText(api_key=LLM_API_KEY)
             with open(tmp_path, "rb") as audio_file:
                 response = await stt.transcribe(
