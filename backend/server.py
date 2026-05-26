@@ -144,6 +144,10 @@ async def call_llm(prompt: str, system_message: str = "You are a professional AI
         raise HTTPException(status_code=500, detail=f"LLM call failed: {str(e)}")
 
 # API Routes
+@app.get("/")
+async def app_root():
+    return {"message": "CareerPilot API"}
+
 @api_router.get("/")
 async def root():
     return {"message": "CareerPilot API"}
