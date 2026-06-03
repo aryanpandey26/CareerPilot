@@ -136,6 +136,17 @@ async def get_current_user(request: Request) -> dict:
 
 
 # ---------------- Routes ----------------
+@router.get("/google/config")
+async def google_config_status():
+    return {
+        "google_client_id": bool(GOOGLE_CLIENT_ID),
+        "google_client_secret": bool(GOOGLE_CLIENT_SECRET),
+        "google_redirect_uri": bool(GOOGLE_REDIRECT_URI),
+        "frontend_url": bool(FRONTEND_URL),
+        "redirect_uri": GOOGLE_REDIRECT_URI,
+        "frontend_url_value": FRONTEND_URL,
+    }
+
 @router.post("/register")
 async def register(req: RegisterRequest):
     existing = await _db.users.find_one({"email": req.email.lower()}, {"_id": 0})
