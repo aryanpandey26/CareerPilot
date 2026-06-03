@@ -166,6 +166,18 @@ async def app_root():
 async def root():
     return {"message": "CareerPilot API"}
 
+@api_router.get("/health/db")
+async def database_health():
+    try:
+        await client.admin.command("ping")
+        return {"database": "connected", "db_name": os.environ.get("DB_NAME")}
+    except Exception as e:
+        logging.error(f"Database health check failed: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Database connection failed: {type(e).__name__}"
+        )
+
 class ResumeAnalysisRequest(BaseModel):
     resume_text: str
     job_description: str
