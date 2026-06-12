@@ -1082,6 +1082,18 @@ set_auth_db(db)
 app.include_router(auth_router)
 app.include_router(api_router)
 
+DEFAULT_CORS_ORIGINS = [
+    "http://localhost:3000",
+    "http://localhost:3001",
+    "https://career-pilot-flax.vercel.app",
+]
+
+CORS_ORIGINS = [
+    origin.strip()
+    for origin in os.environ.get("CORS_ORIGINS", ",".join(DEFAULT_CORS_ORIGINS)).split(",")
+    if origin.strip()
+]
+
 @app.on_event("startup")
 async def _ensure_indexes():
     """TTL indexes to auto-prune ephemeral records."""
@@ -1098,7 +1110,7 @@ async def _ensure_indexes():
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
-    allow_origins=os.environ.get('CORS_ORIGINS', '*').split(','),
+    allow_origins=CORS_ORIGINS,
     allow_methods=["*"],
     allow_headers=["*"],
 )
