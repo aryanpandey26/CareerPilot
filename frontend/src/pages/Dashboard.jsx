@@ -19,6 +19,7 @@ import axios from "axios";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
+const REQUEST_CONFIG = { withCredentials: true };
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -34,10 +35,10 @@ export default function Dashboard() {
     try {
       const localSessionIds = JSON.parse(localStorage.getItem("interviewSessionIds") || "[]");
       const [analyticsResult, historyResult, localHistoryResult] = await Promise.allSettled([
-        axios.get(`${API}/analytics/performance`),
-        axios.get(`${API}/analytics/history`),
+        axios.get(`${API}/analytics/performance`, REQUEST_CONFIG),
+        axios.get(`${API}/analytics/history`, REQUEST_CONFIG),
         localSessionIds.length > 0
-          ? axios.post(`${API}/analytics/history/by-ids`, { session_ids: localSessionIds })
+          ? axios.post(`${API}/analytics/history/by-ids`, { session_ids: localSessionIds }, REQUEST_CONFIG)
           : Promise.resolve({ data: [] }),
       ]);
 

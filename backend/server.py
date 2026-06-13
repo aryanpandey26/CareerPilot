@@ -674,8 +674,7 @@ async def get_interview_history(user_request: Request):
         user = await get_current_user(user_request)
         query["user_id"] = user["user_id"]
     except HTTPException:
-        # Anonymous: return empty (force login for personalized data)
-        return []
+        query = {"answers": {"$exists": True, "$ne": []}}
     sessions = await db.interview_sessions.find(query, {"_id": 0}).to_list(200)
     return sessions
 
