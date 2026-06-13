@@ -14,10 +14,13 @@ import io
 try:
     from emergentintegrations.llm.chat import LlmChat, UserMessage
     from emergentintegrations.llm.openai import OpenAISpeechToText
-except ImportError:
+except ImportError as e:
+    EMERGENT_IMPORT_ERROR = str(e)
     LlmChat = None
     UserMessage = None
     OpenAISpeechToText = None
+else:
+    EMERGENT_IMPORT_ERROR = None
 import json
 import base64
 import httpx
@@ -137,7 +140,7 @@ async def call_llm(prompt: str, system_message: str = "You are a professional AI
         if LlmChat is None or UserMessage is None:
             raise HTTPException(
                 status_code=503,
-                detail="Emergent LLM integration is not installed on the backend."
+                detail=f"Emergent LLM integration failed to load: {EMERGENT_IMPORT_ERROR}"
             )
 
         try:
@@ -780,7 +783,7 @@ async def transcribe_audio(
                 if OpenAISpeechToText is None:
                     raise HTTPException(
                         status_code=503,
-                        detail="Speech-to-text requires OPENAI_API_KEY or the Emergent integration package on this deployment"
+                        detail=f"Speech-to-text integration failed to load: {EMERGENT_IMPORT_ERROR}"
                     )
                 stt = OpenAISpeechToText(api_key=LLM_API_KEY)
                 with open(tmp_path, "rb") as audio_file:
