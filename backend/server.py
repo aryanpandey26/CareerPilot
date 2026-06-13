@@ -116,6 +116,31 @@ class STTRequest(BaseModel):
     audio_base64: str
 
 # Helper Functions
+def build_fallback_questions(request: QuestionGenerationRequest) -> QuestionSet:
+    """Create usable interview questions when the AI provider is unavailable."""
+    skills = [skill for skill in (request.extracted_skills + request.missing_skills) if skill]
+    primary_skill = skills[0] if skills else request.job_title
+    secondary_skill = skills[1] if len(skills) > 1 else primary_skill
+
+    return QuestionSet(
+        technical_questions=[
+            f"What core skills are required for a {request.job_title}, and how have you used {primary_skill} in practice?",
+            f"Explain a project where you solved a technical problem related to {secondary_skill}.",
+            f"How would you debug a production issue in a {request.job_title} role?",
+            f"What trade-offs would you consider when designing a scalable solution for this role?",
+            f"Describe how you would learn and apply a missing skill quickly in a real project.",
+        ],
+        scenario_questions=[
+            "You are assigned a task with unclear requirements and a tight deadline. How would you proceed?",
+            "A feature you shipped causes an unexpected issue for users. What steps would you take?",
+        ],
+        hr_questions=[
+            "Tell me about yourself and why you are interested in this role.",
+            "Describe a time you received feedback and how you acted on it.",
+        ],
+    )
+
+
 def extract_text_from_pdf(file_content: bytes) -> str:
     """Extract text from PDF file"""
     try:
@@ -300,6 +325,9 @@ async def analyze_resume_text(request: ResumeAnalysisRequest, user_request: Requ
             current_user_id = user["user_id"]
         except HTTPException:
             current_user_id = None
+        except Exception as e:
+            logging.warning(f"Could not resolve current user for interview session: {e}")
+            current_user_id = None
 
         resume_text = request.resume_text
         job_description = request.job_description
@@ -407,19 +435,23 @@ Rules:
 - Include one real-world problem-solving question"""
         
         system_message = "You are an expert technical interviewer. Generate challenging, relevant interview questions."
-        response = await call_llm(prompt, system_message)
-        
-        # Parse JSON response
-        response_clean = response.strip()
-        if response_clean.startswith("```"):
-            response_clean = response_clean.split("```")[1]
-            if response_clean.startswith("json"):
-                response_clean = response_clean[4:]
-        response_clean = response_clean.strip()
-        
-        result_data = json.loads(response_clean)
-        return QuestionSet(**result_data)
-        
+        try:
+            response = await call_llm(prompt, system_message)
+
+            # Parse JSON response
+            response_clean = response.strip()
+            if response_clean.startswith("```"):
+                response_clean = response_clean.split("```")[1]
+                if response_clean.startswith("json"):
+                    response_clean = response_clean[4:]
+            response_clean = response_clean.strip()
+
+            result_data = json.loads(response_clean)
+            return QuestionSet(**result_data)
+        except Exception as e:
+            logging.error(f"Question generation AI fallback triggered: {e}")
+            return build_fallback_questions(request)
+
     except Exception as e:
         logging.error(f"Error generating questions: {e}")
         raise HTTPException(status_code=500, detail=str(e))

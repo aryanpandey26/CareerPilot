@@ -67,7 +67,11 @@ export default function InterviewSetup() {
       navigate(`/interview/${sessionResponse.data.id}`);
     } catch (error) {
       console.error("Error setting up interview:", error);
-      toast.error("Failed to setup interview. Please try again.");
+      const detail = error.response?.data?.detail;
+      const message = Array.isArray(detail)
+        ? detail.map((item) => item.msg || JSON.stringify(item)).join(", ")
+        : detail || error.message || "Failed to setup interview. Please try again.";
+      toast.error(message);
     } finally {
       setLoading(false);
     }
