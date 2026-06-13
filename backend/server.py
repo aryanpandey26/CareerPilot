@@ -743,10 +743,10 @@ async def transcribe_audio(
     session_id: Optional[str] = Form(None),
     question_index: Optional[int] = Form(None),
 ):
-    """Transcribe an uploaded audio blob using OpenAI Whisper via Emergent LLM key."""
+    """Transcribe an uploaded audio blob using OpenAI Whisper."""
     try:
         if not LLM_API_KEY:
-            raise HTTPException(status_code=500, detail="EMERGENT_LLM_KEY missing on server")
+            raise HTTPException(status_code=500, detail="OPENAI_API_KEY or EMERGENT_LLM_KEY missing on server")
 
         content = await audio.read()
         if not content:
@@ -765,26 +765,37 @@ async def transcribe_audio(
 
         # Use try/finally to ensure cleanup
         try:
-            if OpenAISpeechToText is None:
-                raise HTTPException(
-                    status_code=503,
-                    detail="Speech-to-text is not configured on this deployment"
-                )
-            stt = OpenAISpeechToText(api_key=LLM_API_KEY)
-            with open(tmp_path, "rb") as audio_file:
-                response = await stt.transcribe(
-                    file=audio_file,
-                    model="whisper-1",
-                    response_format="json",
-                    language="en",
-                )
+            if OPENAI_API_KEY:
+                async with httpx.AsyncClient(timeout=60) as client:
+                    with open(tmp_path, "rb") as audio_file:
+                        response = await client.post(
+                            "https://api.openai.com/v1/audio/transcriptions",
+                            headers={"Authorization": f"Bearer {OPENAI_API_KEY}"},
+                            files={"file": (tmp_path.name, audio_file, audio.content_type or "audio/webm")},
+                            data={"model": "whisper-1", "response_format": "json", "language": "en"},
+                        )
+                response.raise_for_status()
+                transcript = response.json().get("text", "")
+            else:
+                if OpenAISpeechToText is None:
+                    raise HTTPException(
+                        status_code=503,
+                        detail="Speech-to-text requires OPENAI_API_KEY or the Emergent integration package on this deployment"
+                    )
+                stt = OpenAISpeechToText(api_key=LLM_API_KEY)
+                with open(tmp_path, "rb") as audio_file:
+                    response = await stt.transcribe(
+                        file=audio_file,
+                        model="whisper-1",
+                        response_format="json",
+                        language="en",
+                    )
+                transcript = getattr(response, "text", None) or str(response)
         finally:
             try:
                 tmp_path.unlink(missing_ok=True)
             except Exception:
                 pass
-
-        transcript = getattr(response, "text", None) or str(response)
 
         # Optionally store transcript on the session
         if session_id and question_index is not None:
