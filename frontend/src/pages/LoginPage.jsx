@@ -31,6 +31,7 @@ export default function LoginPage() {
         profile_fetch_failed: "Couldn't fetch your Google profile.",
         no_email: "Google didn't share an email with us.",
         oauth_exception: "Unexpected sign-in error. Try again.",
+        google_oauth_not_configured: "Google sign-in is not configured on the backend.",
       };
       toast.error(map[err] || "Sign-in error.");
       // Clean the URL so reload doesn't re-toast
