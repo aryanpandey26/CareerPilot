@@ -177,6 +177,45 @@ def build_fallback_evaluations(qa_pairs: List[Dict[str, Any]]) -> List[Dict[str,
     return evaluations
 
 
+def build_basic_performance_analytics(sessions: List[Dict[str, Any]]) -> PerformanceAnalytics:
+    """Compute dashboard analytics without requiring an AI provider."""
+    scores = []
+    strengths = []
+    weaknesses = []
+    focus_topics = []
+
+    for session in sessions:
+        for answer in session.get("answers", []):
+            evaluation = answer.get("evaluation") or {}
+            score = evaluation.get("overall_score")
+            if isinstance(score, (int, float)):
+                scores.append(float(score))
+            strengths.extend(evaluation.get("strengths") or [])
+            weaknesses.extend(evaluation.get("weaknesses") or [])
+            focus_topics.extend(evaluation.get("improvement_suggestions") or [])
+
+    if not scores:
+        return PerformanceAnalytics(
+            average_score=0,
+            strong_areas=[],
+            weak_areas=[],
+            improvement_trend="No data",
+            recommended_focus_topics=[],
+        )
+
+    trend = "Stable"
+    if len(scores) >= 2:
+        trend = "Improving" if scores[-1] > scores[0] else "Declining" if scores[-1] < scores[0] else "Stable"
+
+    return PerformanceAnalytics(
+        average_score=round(sum(scores) / len(scores), 2),
+        strong_areas=list(dict.fromkeys(strengths))[:5],
+        weak_areas=list(dict.fromkeys(weaknesses))[:5],
+        improvement_trend=trend,
+        recommended_focus_topics=list(dict.fromkeys(focus_topics))[:5],
+    )
+
+
 def extract_text_from_pdf(file_content: bytes) -> str:
     """Extract text from PDF file"""
     try:
@@ -577,13 +616,7 @@ async def get_performance_analytics():
                     all_scores.append(answer["evaluation"]["overall_score"])
         
         if not all_scores:
-            return PerformanceAnalytics(
-                average_score=0,
-                strong_areas=[],
-                weak_areas=[],
-                improvement_trend="No data",
-                recommended_focus_topics=[]
-            )
+            return build_basic_performance_analytics(sessions)
         
         # Prepare prompt for analytics
         prompt = f"""Analyze interview performance trends.
@@ -606,22 +639,32 @@ Rules:
 - Recommend learning roadmap"""
         
         system_message = "You are a performance analytics expert. Analyze interview data and provide actionable insights."
-        response = await call_llm(prompt, system_message)
-        
-        # Parse JSON response
-        response_clean = response.strip()
-        if response_clean.startswith("```"):
-            response_clean = response_clean.split("```")[1]
-            if response_clean.startswith("json"):
-                response_clean = response_clean[4:]
-        response_clean = response_clean.strip()
-        
-        result_data = json.loads(response_clean)
-        return PerformanceAnalytics(**result_data)
-        
+        try:
+            response = await call_llm(prompt, system_message)
+
+            # Parse JSON response
+            response_clean = response.strip()
+            if response_clean.startswith("```"):
+                response_clean = response_clean.split("```")[1]
+                if response_clean.startswith("json"):
+                    response_clean = response_clean[4:]
+            response_clean = response_clean.strip()
+
+            result_data = json.loads(response_clean)
+            return PerformanceAnalytics(**result_data)
+        except Exception as e:
+            logging.error(f"Performance analytics AI fallback triggered: {e}")
+            return build_basic_performance_analytics(sessions)
+
     except Exception as e:
         logging.error(f"Error getting analytics: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        return PerformanceAnalytics(
+            average_score=0,
+            strong_areas=[],
+            weak_areas=[],
+            improvement_trend="No data",
+            recommended_focus_topics=[],
+        )
 
 @api_router.get("/analytics/history")
 async def get_interview_history(user_request: Request):

@@ -33,20 +33,25 @@ export default function Dashboard() {
   const loadData = async () => {
     try {
       const localSessionIds = JSON.parse(localStorage.getItem("interviewSessionIds") || "[]");
-      const [analyticsRes, historyRes, localHistoryRes] = await Promise.all([
+      const [analyticsResult, historyResult, localHistoryResult] = await Promise.allSettled([
         axios.get(`${API}/analytics/performance`),
         axios.get(`${API}/analytics/history`),
         localSessionIds.length > 0
           ? axios.post(`${API}/analytics/history/by-ids`, { session_ids: localSessionIds })
           : Promise.resolve({ data: [] }),
       ]);
-      const mergedHistory = [...historyRes.data, ...localHistoryRes.data].reduce((acc, session) => {
+
+      const analyticsData = analyticsResult.status === "fulfilled" ? analyticsResult.value.data : null;
+      const authenticatedHistory = historyResult.status === "fulfilled" ? historyResult.value.data : [];
+      const localHistory = localHistoryResult.status === "fulfilled" ? localHistoryResult.value.data : [];
+      const mergedHistory = [...authenticatedHistory, ...localHistory].reduce((acc, session) => {
         if (session?.id && !acc.some((item) => item.id === session.id)) {
           acc.push(session);
         }
         return acc;
       }, []);
-      setAnalytics(analyticsRes.data);
+
+      setAnalytics(analyticsData);
       setHistory(mergedHistory);
       setLoading(false);
     } catch (error) {
@@ -90,9 +95,7 @@ export default function Dashboard() {
     if (scores.length === 0) return 0;
     return Math.round(scores.reduce((s, x) => s + x, 0) / scores.length);
   })();
-  const completedHistory = (history || []).filter(
-    (s) => (s.answers || []).length > 0 && s.evaluated_at
-  );
+  const completedHistory = (history || []).filter((s) => (s.answers || []).length > 0);
   // Backend already filters /api/analytics/history to the current authenticated user.
 
   return (
