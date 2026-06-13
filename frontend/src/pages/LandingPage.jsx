@@ -40,7 +40,7 @@ export default function LandingPage() {
                 </span>
                 <Button
                   data-testid="landing-dashboard-btn"
-                  onClick={() => navigate("/home")}
+                  onClick={() => navigate("/dashboard")}
                   className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold rounded-full px-5 shadow-md"
                 >
                   Dashboard
@@ -144,7 +144,7 @@ export default function LandingPage() {
               </Button>
               <Button
                 data-testid="hero-dashboard-btn"
-                onClick={() => navigate("/home")}
+                onClick={() => navigate("/dashboard")}
                 variant="outline"
                 className="border-2 border-slate-300 bg-white/50 backdrop-blur-sm hover:bg-white text-slate-700 font-semibold px-8 py-6 rounded-full text-lg transition-all"
               >

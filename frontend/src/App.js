@@ -73,7 +73,7 @@ function AppContent() {
           path="/home"
           element={
             <ProtectedRoute>
-              <Dashboard />
+              <LandingPage />
             </ProtectedRoute>
           }
         />

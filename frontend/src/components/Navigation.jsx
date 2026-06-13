@@ -24,7 +24,7 @@ export const Navigation = () => {
           {/* Logo/Brand */}
           <div
             className="flex items-center cursor-pointer"
-            onClick={() => navigate("/")}
+            onClick={() => navigate("/home")}
           >
             <div
               className="text-2xl font-bold text-primary"
@@ -38,8 +38,8 @@ export const Navigation = () => {
           <div className="flex items-center gap-2">
             <Button
               data-testid="nav-home-btn"
-              onClick={() => navigate("/")}
-              variant={isActive("/") ? "default" : "ghost"}
+              onClick={() => navigate("/home")}
+              variant={isActive("/") || isActive("/home") ? "default" : "ghost"}
               className="gap-2 font-medium"
               style={{ fontFamily: "Inter, sans-serif" }}
             >
@@ -60,8 +60,8 @@ export const Navigation = () => {
 
             <Button
               data-testid="nav-dashboard-btn"
-              onClick={() => navigate("/home")}
-              variant={isActive("/home") || isActive("/dashboard") ? "default" : "ghost"}
+              onClick={() => navigate("/dashboard")}
+              variant={isActive("/dashboard") ? "default" : "ghost"}
               className="gap-2 font-medium"
               style={{ fontFamily: "Inter, sans-serif" }}
             >
