@@ -56,7 +56,7 @@ export function AuthProvider({ children }) {
 
   const loginWithGoogle = () => {
     // Backend handles the entire OAuth dance: /api/auth/google/login → Google →
-    // /api/auth/google/callback (sets cookie) → 302 to /dashboard.
+    // /api/auth/google/callback (sets cookie) → 302 to /home.
     window.location.href = `${API}/auth/google/login`;
   };
 

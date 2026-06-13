@@ -47,7 +47,7 @@ export default function AuthCallback() {
         window.history.replaceState({}, "", window.location.pathname);
         await refresh();
         toast.success("Signed in with Google");
-        navigate("/dashboard", { replace: true });
+        navigate("/home", { replace: true });
       } catch (err) {
         console.error("Google session exchange failed:", err);
         toast.error("Google sign-in failed. Please try again.");
