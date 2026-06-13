@@ -115,6 +115,9 @@ class TTSRequest(BaseModel):
 class STTRequest(BaseModel):
     audio_base64: str
 
+class HistoryByIdsRequest(BaseModel):
+    session_ids: List[str]
+
 # Helper Functions
 def build_fallback_questions(request: QuestionGenerationRequest) -> QuestionSet:
     """Create usable interview questions when the AI provider is unavailable."""
@@ -139,6 +142,39 @@ def build_fallback_questions(request: QuestionGenerationRequest) -> QuestionSet:
             "Describe a time you received feedback and how you acted on it.",
         ],
     )
+
+
+def build_fallback_evaluations(qa_pairs: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """Create basic persisted evaluations when the AI evaluator is unavailable."""
+    evaluations = []
+    for item in qa_pairs:
+        answer = (item.get("answer") or "").strip()
+        word_count = len(answer.split())
+        if word_count >= 80:
+            score = 72
+        elif word_count >= 35:
+            score = 62
+        elif word_count >= 12:
+            score = 48
+        else:
+            score = 30
+
+        evaluations.append({
+            "question_index": item["question_index"],
+            "technical_accuracy": max(1, min(10, round(score / 10))),
+            "depth": max(1, min(10, round((score - 5) / 10))),
+            "clarity": max(1, min(10, round((score + 5) / 10))),
+            "confidence": max(1, min(10, round(score / 10))),
+            "overall_score": score,
+            "strengths": ["Answer submitted successfully."],
+            "weaknesses": ["AI evaluation was unavailable, so this is a basic completion score."],
+            "model_answer": "AI model answer unavailable for this attempt.",
+            "improvement_suggestions": [
+                "Add more concrete examples, implementation details, and trade-offs.",
+                "Structure the answer with situation, approach, result, and lessons learned.",
+            ],
+        })
+    return evaluations
 
 
 def extract_text_from_pdf(file_content: bytes) -> str:
@@ -600,6 +636,19 @@ async def get_interview_history(user_request: Request):
     sessions = await db.interview_sessions.find(query, {"_id": 0}).to_list(200)
     return sessions
 
+@api_router.post("/analytics/history/by-ids")
+async def get_interview_history_by_ids(request: HistoryByIdsRequest):
+    """Get browser-owned interview sessions by explicit session id list."""
+    session_ids = list(dict.fromkeys([sid for sid in request.session_ids if sid]))[:100]
+    if not session_ids:
+        return []
+    sessions = await db.interview_sessions.find(
+        {"id": {"$in": session_ids}},
+        {"_id": 0}
+    ).to_list(100)
+    order = {sid: idx for idx, sid in enumerate(session_ids)}
+    return sorted(sessions, key=lambda item: order.get(item.get("id"), len(order)))
+
 class CheatingAnalysisRequest(BaseModel):
     session_id: str
     cheating_events: List[Dict[str, Any]]
@@ -719,19 +768,23 @@ Input answers:
 Return ONLY a JSON array like: [{{"question_index": 0, ...}}, ...]"""
 
         system_message = "You are a professional technical interviewer. Evaluate each answer objectively, returning a structured JSON array."
-        response = await call_llm(prompt, system_message)
+        try:
+            response = await call_llm(prompt, system_message)
 
-        # Parse JSON response
-        response_clean = response.strip()
-        if response_clean.startswith("```"):
-            response_clean = response_clean.split("```")[1]
-            if response_clean.startswith("json"):
-                response_clean = response_clean[4:]
-        response_clean = response_clean.strip()
+            # Parse JSON response
+            response_clean = response.strip()
+            if response_clean.startswith("```"):
+                response_clean = response_clean.split("```")[1]
+                if response_clean.startswith("json"):
+                    response_clean = response_clean[4:]
+            response_clean = response_clean.strip()
 
-        evaluations_list = json.loads(response_clean)
-        if not isinstance(evaluations_list, list):
-            raise ValueError("LLM did not return a JSON array")
+            evaluations_list = json.loads(response_clean)
+            if not isinstance(evaluations_list, list):
+                raise ValueError("LLM did not return a JSON array")
+        except Exception as e:
+            logging.error(f"Batch evaluation AI fallback triggered: {e}")
+            evaluations_list = build_fallback_evaluations(qa_pairs)
 
         # Save each answer + evaluation back into the session
         answers_to_persist = []

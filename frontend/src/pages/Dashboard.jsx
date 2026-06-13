@@ -32,12 +32,22 @@ export default function Dashboard() {
 
   const loadData = async () => {
     try {
-      const [analyticsRes, historyRes] = await Promise.all([
+      const localSessionIds = JSON.parse(localStorage.getItem("interviewSessionIds") || "[]");
+      const [analyticsRes, historyRes, localHistoryRes] = await Promise.all([
         axios.get(`${API}/analytics/performance`),
         axios.get(`${API}/analytics/history`),
+        localSessionIds.length > 0
+          ? axios.post(`${API}/analytics/history/by-ids`, { session_ids: localSessionIds })
+          : Promise.resolve({ data: [] }),
       ]);
+      const mergedHistory = [...historyRes.data, ...localHistoryRes.data].reduce((acc, session) => {
+        if (session?.id && !acc.some((item) => item.id === session.id)) {
+          acc.push(session);
+        }
+        return acc;
+      }, []);
       setAnalytics(analyticsRes.data);
-      setHistory(historyRes.data);
+      setHistory(mergedHistory);
       setLoading(false);
     } catch (error) {
       console.error("Error loading dashboard data:", error);
