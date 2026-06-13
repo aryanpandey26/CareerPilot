@@ -1088,11 +1088,12 @@ DEFAULT_CORS_ORIGINS = [
     "https://career-pilot-flax.vercel.app",
 ]
 
-CORS_ORIGINS = [
+env_cors_origins = [
     origin.strip()
-    for origin in os.environ.get("CORS_ORIGINS", ",".join(DEFAULT_CORS_ORIGINS)).split(",")
+    for origin in os.environ.get("CORS_ORIGINS", "").split(",")
     if origin.strip()
 ]
+CORS_ORIGINS = list(dict.fromkeys(DEFAULT_CORS_ORIGINS + env_cors_origins))
 
 @app.on_event("startup")
 async def _ensure_indexes():
