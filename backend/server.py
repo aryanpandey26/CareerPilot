@@ -38,7 +38,9 @@ app = FastAPI()
 api_router = APIRouter(prefix="/api")
 
 # LLM Configuration
-LLM_API_KEY = os.environ.get('OPENAI_API_KEY') or os.environ.get('EMERGENT_LLM_KEY')
+OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY')
+EMERGENT_LLM_KEY = os.environ.get('EMERGENT_LLM_KEY')
+LLM_API_KEY = OPENAI_API_KEY or EMERGENT_LLM_KEY
 LLM_MODEL = os.environ.get('OPENAI_MODEL', 'gpt-4o-mini')
 
 # Pydantic Models
@@ -128,15 +130,42 @@ async def call_llm(prompt: str, system_message: str = "You are a professional AI
     if not LLM_API_KEY:
         raise HTTPException(
             status_code=503,
-            detail="AI features are not configured. Set OPENAI_API_KEY in Vercel."
+            detail="AI features are not configured. Set OPENAI_API_KEY or EMERGENT_LLM_KEY in Vercel."
         )
+
+    if EMERGENT_LLM_KEY and not OPENAI_API_KEY:
+        if LlmChat is None or UserMessage is None:
+            raise HTTPException(
+                status_code=503,
+                detail="Emergent LLM integration is not installed on the backend."
+            )
+
+        try:
+            chat = LlmChat(
+                api_key=EMERGENT_LLM_KEY,
+                session_id=str(uuid.uuid4()),
+                system_message=system_message,
+            ).with_model("openai", LLM_MODEL)
+            response = await chat.send_message(UserMessage(text=prompt))
+            return (
+                response
+                if isinstance(response, str)
+                else getattr(response, "content", None)
+                or getattr(response, "text", None)
+                or str(response)
+            )
+        except HTTPException:
+            raise
+        except Exception as e:
+            logging.error(f"Emergent LLM error: {e}")
+            raise HTTPException(status_code=502, detail=f"Emergent LLM request failed: {str(e)}")
 
     try:
         async with httpx.AsyncClient(timeout=60) as client:
             response = await client.post(
                 "https://api.openai.com/v1/chat/completions",
                 headers={
-                    "Authorization": f"Bearer {LLM_API_KEY}",
+                    "Authorization": f"Bearer {OPENAI_API_KEY}",
                     "Content-Type": "application/json",
                 },
                 json={
