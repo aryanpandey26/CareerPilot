@@ -250,7 +250,9 @@ Scoring Logic:
         except json.JSONDecodeError as e:
             logging.error(f"Failed to parse LLM response: {response}")
             raise HTTPException(status_code=500, detail="Failed to parse analysis results")
-            
+
+    except HTTPException:
+        raise
     except Exception as e:
         logging.error(f"Error in analyze_resume: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -330,7 +332,9 @@ Scoring Logic:
         except json.JSONDecodeError as e:
             logging.error(f"Failed to parse LLM response: {response}")
             raise HTTPException(status_code=500, detail="Failed to parse analysis results")
-            
+
+    except HTTPException:
+        raise
     except Exception as e:
         logging.error(f"Error in analyze_resume_text: {e}")
         raise HTTPException(status_code=500, detail=str(e))

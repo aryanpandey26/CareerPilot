@@ -21,6 +21,14 @@ export default function ResumeAnalyzer() {
   const [analyzing, setAnalyzing] = useState(false);
   const [result, setResult] = useState(null);
 
+  const getErrorMessage = (error) => {
+    const detail = error?.response?.data?.detail;
+    if (Array.isArray(detail)) {
+      return detail.map((item) => item.msg || item.detail).filter(Boolean).join(", ");
+    }
+    return detail || error?.message || "Failed to analyze resume. Please try again.";
+  };
+
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file && file.type === "application/pdf") {
@@ -54,7 +62,7 @@ export default function ResumeAnalyzer() {
         toast.success("Analysis complete!");
       } catch (error) {
         console.error("Error analyzing resume:", error);
-        toast.error("Failed to analyze resume. Please try again.");
+        toast.error(getErrorMessage(error));
       } finally {
         setAnalyzing(false);
       }
@@ -76,7 +84,7 @@ export default function ResumeAnalyzer() {
         toast.success("Analysis complete!");
       } catch (error) {
         console.error("Error analyzing resume:", error);
-        toast.error("Failed to analyze resume. Please try again.");
+        toast.error(getErrorMessage(error));
       } finally {
         setAnalyzing(false);
       }
