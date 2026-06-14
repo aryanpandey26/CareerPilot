@@ -21,29 +21,24 @@ export default function AuthCallback() {
     const params = new URLSearchParams(hash.startsWith("#") ? hash.slice(1) : hash);
     const token = params.get("token");
     const sessionId = params.get("session_id");
-    if (token) {
-      try {
-        localStorage.setItem("authToken", token);
-        axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-        window.history.replaceState({}, "", window.location.pathname);
-        await refresh();
-        toast.success("Signed in with Google");
-        navigate("/home", { replace: true });
-      } catch (err) {
-        console.error("Google token sign-in failed:", err);
-        toast.error("Google sign-in failed. Please try again.");
-        navigate("/login", { replace: true });
-      }
-      return;
-    }
-
-    if (!sessionId) {
-      navigate("/login", { replace: true });
-      return;
-    }
 
     (async () => {
       try {
+        if (token) {
+          localStorage.setItem("authToken", token);
+          axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+          window.history.replaceState({}, "", window.location.pathname);
+          await refresh();
+          toast.success("Signed in with Google");
+          navigate("/home", { replace: true });
+          return;
+        }
+
+        if (!sessionId) {
+          navigate("/login", { replace: true });
+          return;
+        }
+
         await axios.post(
           `${API}/auth/google-session`,
           { session_id: sessionId },
@@ -66,7 +61,7 @@ export default function AuthCallback() {
         toast.success("Signed in with Google");
         navigate("/home", { replace: true });
       } catch (err) {
-        console.error("Google session exchange failed:", err);
+        console.error("Google sign-in callback failed:", err);
         toast.error("Google sign-in failed. Please try again.");
         navigate("/login", { replace: true });
       }
