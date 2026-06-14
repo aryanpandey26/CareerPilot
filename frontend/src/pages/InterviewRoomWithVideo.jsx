@@ -14,6 +14,13 @@ const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 const MIN_PLAYABLE_VIDEO_BYTES = 10 * 1024;
 
+const getVideoMimeType = () => {
+  if (typeof MediaRecorder === "undefined") return "video/webm";
+  return MediaRecorder.isTypeSupported("video/webm;codecs=vp8,opus")
+    ? "video/webm;codecs=vp8,opus"
+    : "video/webm";
+};
+
 export default function InterviewRoomWithVideo() {
   const { sessionId } = useParams();
   const navigate = useNavigate();
@@ -203,9 +210,8 @@ export default function InterviewRoomWithVideo() {
       ) {
         return;
       }
-      const mediaRecorder = new MediaRecorder(stream, {
-        mimeType: "video/webm",
-      });
+      const videoMimeType = getVideoMimeType();
+      const mediaRecorder = new MediaRecorder(stream, { mimeType: videoMimeType });
       const recordingQuestionIndex = currentQuestionIndex;
 
       mediaRecorderRef.current = mediaRecorder;
@@ -218,7 +224,7 @@ export default function InterviewRoomWithVideo() {
       };
 
       mediaRecorder.onstop = () => {
-        const blob = new Blob(recordedChunksRef.current, { type: "video/webm" });
+        const blob = new Blob(recordedChunksRef.current, { type: videoMimeType });
         if (blob.size < MIN_PLAYABLE_VIDEO_BYTES) {
           console.warn("Skipping tiny video clip", {
             questionIndex: recordingQuestionIndex,
@@ -266,6 +272,11 @@ export default function InterviewRoomWithVideo() {
 
   const stopVideoRecording = () => {
     if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
+      try {
+        mediaRecorderRef.current.requestData();
+      } catch (error) {
+        console.warn("Could not flush video data before stop:", error);
+      }
       mediaRecorderRef.current.stop();
     }
   };

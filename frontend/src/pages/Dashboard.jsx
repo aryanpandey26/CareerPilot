@@ -14,17 +14,22 @@ import {
   Sparkles,
   Flame,
   Trophy,
+  Video,
 } from "lucide-react";
 import axios from "axios";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 const REQUEST_CONFIG = { withCredentials: true };
+const MIN_PLAYABLE_VIDEO_BYTES = 10 * 1024;
+const DASHBOARD_VIDEO_PREVIEW_LIMIT = 3;
 
 export default function Dashboard() {
   const navigate = useNavigate();
   const [analytics, setAnalytics] = useState(null);
   const [history, setHistory] = useState([]);
+  const [videosBySession, setVideosBySession] = useState({});
+  const [videoErrors, setVideoErrors] = useState({});
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -52,8 +57,24 @@ export default function Dashboard() {
         return acc;
       }, []);
 
+      const completedSessions = mergedHistory.filter((session) => (session.answers || []).length > 0);
+      const videoResults = await Promise.allSettled(
+        completedSessions.slice(0, 10).map((session) =>
+          axios.get(`${API}/interview-videos/${session.id}`, REQUEST_CONFIG)
+        )
+      );
+      const nextVideosBySession = {};
+      videoResults.forEach((result, index) => {
+        const sessionId = completedSessions[index]?.id;
+        if (!sessionId || result.status !== "fulfilled") return;
+        nextVideosBySession[sessionId] = (result.value.data?.videos || []).filter(
+          (video) => (video.size_bytes || 0) >= MIN_PLAYABLE_VIDEO_BYTES
+        );
+      });
+
       setAnalytics(analyticsData);
       setHistory(mergedHistory);
+      setVideosBySession(nextVideosBySession);
       setLoading(false);
     } catch (error) {
       console.error("Error loading dashboard data:", error);
@@ -84,40 +105,33 @@ export default function Dashboard() {
     );
   }
 
+  const completedHistory = (history || []).filter((session) => (session.answers || []).length > 0);
   const avgScore = (() => {
-    let scores = [];
-    for (const s of history || []) {
-      for (const a of s.answers || []) {
-        if (typeof a?.evaluation?.overall_score === "number") {
-          scores.push(a.evaluation.overall_score);
+    const scores = [];
+    for (const session of history || []) {
+      for (const answer of session.answers || []) {
+        if (typeof answer?.evaluation?.overall_score === "number") {
+          scores.push(answer.evaluation.overall_score);
         }
       }
     }
     if (scores.length === 0) return 0;
-    return Math.round(scores.reduce((s, x) => s + x, 0) / scores.length);
+    return Math.round(scores.reduce((sum, score) => sum + score, 0) / scores.length);
   })();
-  const completedHistory = (history || []).filter((s) => (s.answers || []).length > 0);
-  // Backend already filters /api/analytics/history to the current authenticated user.
 
   return (
     <div
       data-testid="dashboard-page"
       className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900"
     >
-      {/* Decorative glow blobs */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         <div className="absolute -top-32 -left-32 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl" />
         <div className="absolute top-1/3 -right-32 w-96 h-96 bg-pink-500/20 rounded-full blur-3xl" />
       </div>
 
-      {/* Header */}
       <div className="relative border-b border-purple-500/20 py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div
-            initial={{ opacity: 0, y: -16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-          >
+          <motion.div initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-500/15 border border-purple-400/30 text-purple-200 text-xs font-semibold tracking-wide uppercase">
               <Sparkles className="h-3.5 w-3.5" />
               Performance Insights
@@ -136,15 +150,8 @@ export default function Dashboard() {
       </div>
 
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        {/* Bento Stats */}
         <div className="grid grid-cols-1 md:grid-cols-12 gap-6 mb-12">
-          {/* Average Score */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="md:col-span-5"
-          >
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="md:col-span-5">
             <Card
               data-testid="avg-score-card"
               className="relative overflow-hidden p-8 h-full border-purple-500/30 bg-gradient-to-br from-purple-600/30 via-pink-600/20 to-slate-900/60 backdrop-blur-sm text-white shadow-2xl shadow-purple-500/20"
@@ -152,14 +159,8 @@ export default function Dashboard() {
               <div className="absolute -top-10 -right-10 w-40 h-40 bg-pink-500/20 rounded-full blur-2xl" />
               <div className="relative">
                 <BarChart3 className="h-8 w-8 mb-4 text-purple-200" />
-                <p className="text-xs uppercase tracking-[0.2em] mb-2 text-purple-200/90">
-                  Average Score
-                </p>
-                <div
-                  className={`text-6xl sm:text-7xl font-bold mb-2 bg-gradient-to-r ${getScoreGradient(
-                    avgScore
-                  )} bg-clip-text text-transparent`}
-                >
+                <p className="text-xs uppercase tracking-[0.2em] mb-2 text-purple-200/90">Average Score</p>
+                <div className={`text-6xl sm:text-7xl font-bold mb-2 bg-gradient-to-r ${getScoreGradient(avgScore)} bg-clip-text text-transparent`}>
                   {avgScore}%
                 </div>
                 <p className="text-sm text-slate-300">Across all interviews</p>
@@ -167,113 +168,74 @@ export default function Dashboard() {
             </Card>
           </motion.div>
 
-          {/* Trend */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.08 }}
-            className="md:col-span-4"
-          >
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.08 }} className="md:col-span-4">
             <Card className="p-8 h-full border-purple-500/20 bg-slate-800/60 backdrop-blur-sm text-white">
               <div className="flex items-center justify-between mb-4">
                 <Target className="h-8 w-8 text-purple-300" />
                 {getTrendIcon(analytics?.improvement_trend || "Stable")}
               </div>
-              <p className="text-xs uppercase tracking-[0.2em] text-slate-400 mb-2">
-                Trend
-              </p>
-              <div className="text-3xl font-bold text-white">
-                {analytics?.improvement_trend || "No data"}
-              </div>
+              <p className="text-xs uppercase tracking-[0.2em] text-slate-400 mb-2">Trend</p>
+              <div className="text-3xl font-bold text-white">{analytics?.improvement_trend || "No data"}</div>
             </Card>
           </motion.div>
 
-          {/* Total Interviews */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.16 }}
-            className="md:col-span-3"
-          >
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.16 }} className="md:col-span-3">
             <Card className="p-8 h-full border-purple-500/20 bg-slate-800/60 backdrop-blur-sm text-white">
               <Brain className="h-8 w-8 text-pink-300 mb-4" />
-              <p className="text-xs uppercase tracking-[0.2em] text-slate-400 mb-2">
-                Interviews
-              </p>
+              <p className="text-xs uppercase tracking-[0.2em] text-slate-400 mb-2">Interviews</p>
               <div className="text-3xl font-bold text-white">{completedHistory.length}</div>
             </Card>
           </motion.div>
         </div>
 
-        {/* Strong & Weak (only after user has completed at least one interview) */}
         {completedHistory.length > 0 && (
-        <div className="grid md:grid-cols-2 gap-6 mb-12">
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5 }}
-          >
-            <Card className="p-8 border-emerald-500/20 bg-slate-800/60 backdrop-blur-sm text-white">
-              <div className="flex items-center gap-2 mb-6">
-                <Trophy className="h-6 w-6 text-emerald-300" />
-                <h2 className="text-2xl font-semibold">Strong Areas</h2>
-              </div>
-              {analytics?.strong_areas && analytics.strong_areas.length > 0 ? (
-                <div className="space-y-3">
-                  {analytics.strong_areas.map((area, idx) => (
-                    <div
-                      key={`strong-${idx}-${area}`}
-                      className="flex items-start gap-3 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg"
-                    >
-                      <span className="text-emerald-300 font-bold">✓</span>
-                      <span className="text-slate-200 flex-1">{area}</span>
-                    </div>
-                  ))}
+          <div className="grid md:grid-cols-2 gap-6 mb-12">
+            <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5 }}>
+              <Card className="p-8 border-emerald-500/20 bg-slate-800/60 backdrop-blur-sm text-white">
+                <div className="flex items-center gap-2 mb-6">
+                  <Trophy className="h-6 w-6 text-emerald-300" />
+                  <h2 className="text-2xl font-semibold">Strong Areas</h2>
                 </div>
-              ) : (
-                <p className="text-slate-400">Complete interviews to surface your strengths.</p>
-              )}
-            </Card>
-          </motion.div>
+                {analytics?.strong_areas && analytics.strong_areas.length > 0 ? (
+                  <div className="space-y-3">
+                    {analytics.strong_areas.map((area, idx) => (
+                      <div key={`strong-${idx}-${area}`} className="flex items-start gap-3 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg">
+                        <span className="text-emerald-300 font-bold">OK</span>
+                        <span className="text-slate-200 flex-1">{area}</span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-slate-400">Complete interviews to surface your strengths.</p>
+                )}
+              </Card>
+            </motion.div>
 
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5 }}
-          >
-            <Card className="p-8 border-rose-500/20 bg-slate-800/60 backdrop-blur-sm text-white">
-              <div className="flex items-center gap-2 mb-6">
-                <Flame className="h-6 w-6 text-rose-300" />
-                <h2 className="text-2xl font-semibold">Areas to Improve</h2>
-              </div>
-              {analytics?.weak_areas && analytics.weak_areas.length > 0 ? (
-                <div className="space-y-3">
-                  {analytics.weak_areas.map((area, idx) => (
-                    <div
-                      key={`weak-${idx}-${area}`}
-                      className="flex items-start gap-3 p-3 bg-rose-500/10 border border-rose-500/20 rounded-lg"
-                    >
-                      <span className="text-rose-300 font-bold">•</span>
-                      <span className="text-slate-200 flex-1">{area}</span>
-                    </div>
-                  ))}
+            <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5 }}>
+              <Card className="p-8 border-rose-500/20 bg-slate-800/60 backdrop-blur-sm text-white">
+                <div className="flex items-center gap-2 mb-6">
+                  <Flame className="h-6 w-6 text-rose-300" />
+                  <h2 className="text-2xl font-semibold">Areas to Improve</h2>
                 </div>
-              ) : (
-                <p className="text-slate-400">Complete interviews to identify improvement areas.</p>
-              )}
-            </Card>
-          </motion.div>
-        </div>
+                {analytics?.weak_areas && analytics.weak_areas.length > 0 ? (
+                  <div className="space-y-3">
+                    {analytics.weak_areas.map((area, idx) => (
+                      <div key={`weak-${idx}-${area}`} className="flex items-start gap-3 p-3 bg-rose-500/10 border border-rose-500/20 rounded-lg">
+                        <span className="text-rose-300 font-bold">*</span>
+                        <span className="text-slate-200 flex-1">{area}</span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-slate-400">Complete interviews to identify improvement areas.</p>
+                )}
+              </Card>
+            </motion.div>
+          </div>
         )}
 
-        {/* Recommended Focus */}
         {completedHistory.length > 0 && analytics?.recommended_focus_topics && analytics.recommended_focus_topics.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="mb-12"
-          >
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="mb-12">
             <Card className="p-8 border-purple-500/20 bg-slate-800/60 backdrop-blur-sm text-white">
               <div className="flex items-center gap-2 mb-6">
                 <Award className="h-6 w-6 text-purple-300" />
@@ -281,10 +243,7 @@ export default function Dashboard() {
               </div>
               <div className="flex flex-wrap gap-3">
                 {analytics.recommended_focus_topics.map((topic, idx) => (
-                  <span
-                    key={`topic-${idx}-${topic}`}
-                    className="px-4 py-2 bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-400/30 text-purple-100 rounded-lg font-medium"
-                  >
+                  <span key={`topic-${idx}-${topic}`} className="px-4 py-2 bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-400/30 text-purple-100 rounded-lg font-medium">
                     {topic}
                   </span>
                 ))}
@@ -293,79 +252,115 @@ export default function Dashboard() {
           </motion.div>
         )}
 
-        {/* History */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-        >
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
           <Card className="p-8 border-purple-500/20 bg-slate-800/60 backdrop-blur-sm text-white">
             <h2 className="text-2xl font-semibold mb-6 flex items-center gap-2">
               <BarChart3 className="h-6 w-6 text-purple-300" />
               Interview History
             </h2>
-            {(() => {
-              const completed = completedHistory;
-              if (completed.length === 0) {
-                return (
-                  <div className="text-center py-12">
-                    <Brain className="h-16 w-16 mx-auto text-purple-300/50 mb-4" />
-                    <p className="text-slate-400 mb-4">No completed interviews yet.</p>
-                    <Button
-                      data-testid="start-first-interview-btn"
-                      onClick={() => navigate("/analyze")}
-                      className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
-                    >
-                      Start Your First Interview
-                    </Button>
-                  </div>
-                );
-              }
-              return (
-                <div className="space-y-4">
-                  {completed.slice(0, 10).map((session, idx) => {
-                    const answers = session.answers || [];
-                    const avg =
-                      answers.length > 0
-                        ? Math.round(
-                            answers.reduce(
-                              (sum, a) => sum + (a.evaluation?.overall_score || 0),
-                              0
-                            ) / answers.length
-                          )
-                        : 0;
+            {completedHistory.length === 0 ? (
+              <div className="text-center py-12">
+                <Brain className="h-16 w-16 mx-auto text-purple-300/50 mb-4" />
+                <p className="text-slate-400 mb-4">No completed interviews yet.</p>
+                <Button
+                  data-testid="start-first-interview-btn"
+                  onClick={() => navigate("/analyze")}
+                  className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
+                >
+                  Start Your First Interview
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {completedHistory.slice(0, 10).map((session, idx) => {
+                  const answers = session.answers || [];
+                  const sessionVideos = videosBySession[session.id] || [];
+                  const previewVideos = sessionVideos.slice(0, DASHBOARD_VIDEO_PREVIEW_LIMIT);
+                  const avg = answers.length > 0
+                    ? Math.round(answers.reduce((sum, answer) => sum + (answer.evaluation?.overall_score || 0), 0) / answers.length)
+                    : 0;
 
-                    return (
-                      <div
-                        key={session.id || idx}
-                        data-testid={`history-row-${idx}`}
-                        className="flex items-center justify-between p-4 bg-slate-900/60 border border-purple-500/10 rounded-lg hover:border-purple-400/40 transition-colors cursor-pointer"
+                  return (
+                    <div key={session.id || idx} data-testid={`history-row-${idx}`} className="bg-slate-900/60 border border-purple-500/10 rounded-lg overflow-hidden">
+                      <button
+                        type="button"
+                        className="w-full flex items-center justify-between gap-4 p-4 text-left hover:bg-slate-800/50 transition-colors"
                         onClick={() => navigate(`/results/${session.id}`)}
                       >
                         <div className="flex-1">
                           <h3 className="font-semibold text-white">{session.job_title}</h3>
                           <p className="text-sm text-slate-400">
-                            {session.experience_level} • {answers.length} questions answered
+                            {session.experience_level} - {answers.length} questions answered
                           </p>
+                          {sessionVideos.length > 0 && (
+                            <p className="mt-1 text-xs text-purple-200 flex items-center gap-1">
+                              <Video className="h-3.5 w-3.5" />
+                              {sessionVideos.length} recorded clip{sessionVideos.length === 1 ? "" : "s"}
+                            </p>
+                          )}
                         </div>
                         <div className="text-right">
-                          <div
-                            className={`text-2xl font-bold bg-gradient-to-r ${getScoreGradient(
-                              avg
-                            )} bg-clip-text text-transparent`}
-                          >
+                          <div className={`text-2xl font-bold bg-gradient-to-r ${getScoreGradient(avg)} bg-clip-text text-transparent`}>
                             {avg}%
                           </div>
-                          <p className="text-xs text-slate-500">
-                            {new Date(session.created_at).toLocaleDateString()}
-                          </p>
+                          <p className="text-xs text-slate-500">{new Date(session.created_at).toLocaleDateString()}</p>
                         </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              );
-            })()}
+                      </button>
+
+                      {previewVideos.length > 0 ? (
+                        <div className="border-t border-purple-500/10 p-4">
+                          <div className="mb-3 flex items-center justify-between gap-3">
+                            <h4 className="text-sm font-semibold text-slate-200 flex items-center gap-2">
+                              <Video className="h-4 w-4 text-purple-300" />
+                              Recorded Clips
+                            </h4>
+                            {sessionVideos.length > DASHBOARD_VIDEO_PREVIEW_LIMIT && (
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => navigate(`/results/${session.id}`)}
+                                className="h-8 border-purple-500/30 bg-slate-800/60 text-slate-100 hover:bg-slate-700"
+                              >
+                                View all {sessionVideos.length}
+                              </Button>
+                            )}
+                          </div>
+                          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {previewVideos.map((video) => (
+                              <div key={video.id} className="rounded-lg overflow-hidden border border-purple-500/20 bg-slate-950/60">
+                                <div className="relative">
+                                  <video
+                                    controls
+                                    preload="metadata"
+                                    className="w-full aspect-video bg-black"
+                                    src={`${BACKEND_URL}${video.url_path}`}
+                                    onError={() => setVideoErrors((prev) => ({ ...prev, [video.id]: true }))}
+                                  />
+                                  {videoErrors[video.id] && (
+                                    <div className="absolute inset-0 flex items-center justify-center bg-black/80 text-xs text-slate-200 px-4 text-center">
+                                      This clip could not be played here.
+                                    </div>
+                                  )}
+                                </div>
+                                <div className="p-3 text-xs text-slate-300 flex items-center justify-between">
+                                  <span>Question {video.question_index + 1}</span>
+                                  <span>{(video.size_bytes / 1024).toFixed(1)} KB</span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="border-t border-purple-500/10 px-4 py-3 text-xs text-slate-500">
+                          No saved clips found for this interview.
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </Card>
         </motion.div>
 

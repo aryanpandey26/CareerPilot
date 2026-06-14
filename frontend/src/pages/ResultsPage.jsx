@@ -16,6 +16,7 @@ export default function ResultsPage() {
   const [session, setSession] = useState(null);
   const [deepCheat, setDeepCheat] = useState(null);
   const [videos, setVideos] = useState([]);
+  const [videoErrors, setVideoErrors] = useState({});
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -240,12 +241,20 @@ export default function ResultsPage() {
               <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {videos.map((v) => (
                   <div key={v.id} className="rounded-lg overflow-hidden border border-purple-500/20 bg-slate-900/60">
-                    <video
-                      controls
-                      preload="metadata"
-                      className="w-full aspect-video bg-black"
-                      src={`${BACKEND_URL}${v.url_path}`}
-                    />
+                    <div className="relative">
+                      <video
+                        controls
+                        preload="metadata"
+                        className="w-full aspect-video bg-black"
+                        src={`${BACKEND_URL}${v.url_path}`}
+                        onError={() => setVideoErrors((prev) => ({ ...prev, [v.id]: true }))}
+                      />
+                      {videoErrors[v.id] && (
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/80 text-xs text-slate-200 px-4 text-center">
+                          This clip could not be played by the browser.
+                        </div>
+                      )}
+                    </div>
                     <div className="p-3 text-xs text-slate-300 flex items-center justify-between">
                       <span>Question {v.question_index + 1}</span>
                       <span>{(v.size_bytes / 1024).toFixed(1)} KB</span>
