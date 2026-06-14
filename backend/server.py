@@ -124,22 +124,51 @@ def build_fallback_questions(request: QuestionGenerationRequest) -> QuestionSet:
     skills = [skill for skill in (request.extracted_skills + request.missing_skills) if skill]
     primary_skill = skills[0] if skills else request.job_title
     secondary_skill = skills[1] if len(skills) > 1 else primary_skill
+    tertiary_skill = skills[2] if len(skills) > 2 else secondary_skill
+    scenario_seed = uuid.uuid4().int
+
+    technical_templates = [
+        f"Walk me through how you would use {primary_skill} to solve a production problem as a {request.job_title}.",
+        f"What are the most important trade-offs when applying {secondary_skill} in a real project?",
+        f"How would you debug a slow or failing feature related to {tertiary_skill}?",
+        f"Design a small system for a {request.job_title} role that uses {primary_skill} and explain the key components.",
+        f"What mistakes do developers commonly make with {secondary_skill}, and how would you avoid them?",
+        f"Compare two approaches for implementing a feature that depends on {tertiary_skill}.",
+        f"How would you test and validate code that uses {primary_skill} before shipping it?",
+        f"Describe a time you would choose simplicity over scalability in a {request.job_title} project.",
+        f"What concepts should a {request.experience_level} candidate know deeply for {request.job_title} work?",
+        f"How would you learn and apply {secondary_skill} quickly if it was required for a deadline?",
+    ]
+    scenario_templates = [
+        "A teammate disagrees with your technical approach two days before release. What would you do?",
+        f"You discover a critical bug in a {request.job_title} feature after deployment. How do you respond?",
+        f"You need to deliver a feature involving {primary_skill}, but requirements are incomplete. How do you proceed?",
+        "A user reports inconsistent behavior that you cannot reproduce locally. How would you investigate?",
+    ]
+    hr_templates = [
+        f"Why are you interested in this {request.job_title} role?",
+        "Tell me about a time you received feedback and changed your approach.",
+        "Describe a project where you had to learn something quickly.",
+        "How do you stay productive when priorities change suddenly?",
+    ]
+
+    offset = scenario_seed % len(technical_templates)
+    technical_questions = [
+        technical_templates[(offset + idx) % len(technical_templates)]
+        for idx in range(5)
+    ]
+    scenario_offset = scenario_seed % len(scenario_templates)
+    hr_offset = scenario_seed % len(hr_templates)
 
     return QuestionSet(
-        technical_questions=[
-            f"What core skills are required for a {request.job_title}, and how have you used {primary_skill} in practice?",
-            f"Explain a project where you solved a technical problem related to {secondary_skill}.",
-            f"How would you debug a production issue in a {request.job_title} role?",
-            f"What trade-offs would you consider when designing a scalable solution for this role?",
-            f"Describe how you would learn and apply a missing skill quickly in a real project.",
-        ],
+        technical_questions=technical_questions,
         scenario_questions=[
-            "You are assigned a task with unclear requirements and a tight deadline. How would you proceed?",
-            "A feature you shipped causes an unexpected issue for users. What steps would you take?",
+            scenario_templates[scenario_offset],
+            scenario_templates[(scenario_offset + 1) % len(scenario_templates)],
         ],
         hr_questions=[
-            "Tell me about yourself and why you are interested in this role.",
-            "Describe a time you received feedback and how you acted on it.",
+            hr_templates[hr_offset],
+            hr_templates[(hr_offset + 1) % len(hr_templates)],
         ],
     )
 
@@ -485,12 +514,14 @@ class QuestionGenerationRequest(BaseModel):
 async def generate_questions(request: QuestionGenerationRequest):
     """Generate dynamic interview questions"""
     try:
+        interview_seed = uuid.uuid4().hex[:8]
         prompt = f"""Generate interview questions tailored to:
 
 User's existing skills: {', '.join(request.extracted_skills)}
 Missing skills from JD: {', '.join(request.missing_skills)}
 Job Role: {request.job_title}
 Experience Level: {request.experience_level}
+Interview Seed: {interview_seed}
 
 Generate:
 - 5 Technical Questions
@@ -505,6 +536,8 @@ Return in JSON:
 }}
 
 Rules:
+- Create a fresh set for this interview seed; do not reuse generic stock questions.
+- Avoid duplicate wording or asking the same concept twice.
 - Questions must progressively increase in difficulty
 - Include at least one deep technical conceptual question
 - Include one real-world problem-solving question"""
