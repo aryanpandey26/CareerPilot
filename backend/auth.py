@@ -341,8 +341,10 @@ async def google_callback(code: str = "", state: str = "", error: str = ""):
         "created_at": datetime.now(timezone.utc),
     })
 
-    # 5) Redirect to FE with cookie set
-    response = RedirectResponse(url=f"{FRONTEND_URL}/home", status_code=302)
+    # 5) Redirect to FE with cookie set and a JWT fallback for browsers that
+    # block third-party cookies between the frontend and backend domains.
+    token = _issue_jwt(user_id)
+    response = RedirectResponse(url=f"{FRONTEND_URL}/auth/callback#token={token}", status_code=302)
     response.set_cookie(
         key="session_token",
         value=session_token,

@@ -8,6 +8,7 @@ import axios from "axios";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
+const MIN_PLAYABLE_VIDEO_BYTES = 10 * 1024;
 
 export default function ResultsPage() {
   const { sessionId } = useParams();
@@ -30,7 +31,9 @@ export default function ResultsPage() {
       ]);
       if (sessRes.status === "fulfilled") setSession(sessRes.value.data);
       if (deepRes.status === "fulfilled") setDeepCheat(deepRes.value.data);
-      if (vidRes.status === "fulfilled") setVideos(vidRes.value.data?.videos || []);
+      if (vidRes.status === "fulfilled") {
+        setVideos((vidRes.value.data?.videos || []).filter((video) => (video.size_bytes || 0) >= MIN_PLAYABLE_VIDEO_BYTES));
+      }
       setLoading(false);
     } catch (error) {
       console.error("Error loading results:", error);

@@ -607,54 +607,8 @@ async def get_performance_analytics():
                 improvement_trend="No data",
                 recommended_focus_topics=[]
             )
-        
-        # Collect all scores
-        all_scores = []
-        for session in sessions:
-            for answer in session.get("answers", []):
-                if "evaluation" in answer:
-                    all_scores.append(answer["evaluation"]["overall_score"])
-        
-        if not all_scores:
-            return build_basic_performance_analytics(sessions)
-        
-        # Prepare prompt for analytics
-        prompt = f"""Analyze interview performance trends.
 
-Interview History:
-{json.dumps(sessions[:10], indent=2)}
-
-Return:
-{{
-  "average_score": number,
-  "strong_areas": [],
-  "weak_areas": [],
-  "improvement_trend": "Improving / Stable / Declining",
-  "recommended_focus_topics": []
-}}
-
-Rules:
-- Identify lowest scoring skill category
-- Detect improvement pattern over time
-- Recommend learning roadmap"""
-        
-        system_message = "You are a performance analytics expert. Analyze interview data and provide actionable insights."
-        try:
-            response = await call_llm(prompt, system_message)
-
-            # Parse JSON response
-            response_clean = response.strip()
-            if response_clean.startswith("```"):
-                response_clean = response_clean.split("```")[1]
-                if response_clean.startswith("json"):
-                    response_clean = response_clean[4:]
-            response_clean = response_clean.strip()
-
-            result_data = json.loads(response_clean)
-            return PerformanceAnalytics(**result_data)
-        except Exception as e:
-            logging.error(f"Performance analytics AI fallback triggered: {e}")
-            return build_basic_performance_analytics(sessions)
+        return build_basic_performance_analytics(sessions)
 
     except Exception as e:
         logging.error(f"Error getting analytics: {e}")

@@ -12,6 +12,7 @@ import Webcam from "react-webcam";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
+const MIN_PLAYABLE_VIDEO_BYTES = 10 * 1024;
 
 export default function InterviewRoomWithVideo() {
   const { sessionId } = useParams();
@@ -205,6 +206,7 @@ export default function InterviewRoomWithVideo() {
       const mediaRecorder = new MediaRecorder(stream, {
         mimeType: "video/webm",
       });
+      const recordingQuestionIndex = currentQuestionIndex;
 
       mediaRecorderRef.current = mediaRecorder;
       recordedChunksRef.current = [];
@@ -217,8 +219,15 @@ export default function InterviewRoomWithVideo() {
 
       mediaRecorder.onstop = () => {
         const blob = new Blob(recordedChunksRef.current, { type: "video/webm" });
+        if (blob.size < MIN_PLAYABLE_VIDEO_BYTES) {
+          console.warn("Skipping tiny video clip", {
+            questionIndex: recordingQuestionIndex,
+            size: blob.size,
+          });
+          return;
+        }
         const videoUrl = URL.createObjectURL(blob);
-        const recIdx = currentQuestionIndex;
+        const recIdx = recordingQuestionIndex;
 
         setVideoRecordings((prev) => [
           ...prev,
@@ -248,7 +257,7 @@ export default function InterviewRoomWithVideo() {
         pendingUploadsRef.current.push(uploadPromise);
       };
 
-      mediaRecorder.start();
+      mediaRecorder.start(1000);
       setCurrentRecording(mediaRecorder);
     } catch (error) {
       console.error("Error starting video recording:", error);
@@ -420,9 +429,11 @@ export default function InterviewRoomWithVideo() {
       }
 
       // Stage 3: Deep cheating analysis
-      setSubmitStage("Running deep proctoring analysis...");
+      setSubmitStage("Queueing proctoring analysis...");
       try {
-        await axios.post(`${API}/analyze-cheating-deep`, { session_id: sessionId });
+        axios.post(`${API}/analyze-cheating-deep`, { session_id: sessionId }).catch((error) => {
+          console.error("Deep cheating analysis failed:", error);
+        });
       } catch (error) {
         console.error("Deep cheating analysis failed:", error);
       }
